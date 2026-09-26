@@ -161,8 +161,9 @@ bunu önlemek için yazıldı, atlama.
 Güncel tasarım (26-09-2026'da kullanıcı isteğiyle değişti, `html_uret.py`
 CSS'inde ve `grafik_uret.py` stilinde gömülü):
 
-- Başlık: "Günlük Özet" (eski "Günlük Gıda & Tarım Bülteni" DEĞİL), üstünde
-  küçük "Sarıaslan Ticaret", solda `logo.png`, sağ üstte çerçevesiz tarih
+- Başlık: "Günlük Özet" (eski "Günlük Gıda & Tarım Bülteni" DEĞİL); ayrıca
+  "Sarıaslan Ticaret" yazısı YOK, solda büyük `logo.png` (84px), sağ üstte
+  çerçevesiz tarih
 - Siyah banner YOK: header ve tablo başlıkları beyaz zemin + koyu yazı,
   ince siyah/buğday (`#c9a339`) çizgilerle ayrılır
 - Font: **Times New Roman, tüm yazılar 12 pt** (gövde, tablo, kart, grafik,
