@@ -115,7 +115,8 @@ table.pricetable td:not(:nth-child(2)), table.pricetable th { white-space: nowra
 .pill.flat { color: var(--ink); opacity: 0.6; }
 
 .kaynakca { font-size: 12pt; }
-.kaynakca ul { margin: 0; padding-left: 18px; }
+.kaynakca ul { margin: 0; padding-left: 18px; column-count: 2; column-gap: 28px; }
+.kaynakca li { break-inside: avoid; }
 /* Grafik kart içine konmaz (tasarim.md: kart sadece KPI için); ince çizgiyle ayrılır */
 .figure { margin: 4px 0 18px 0; padding: 10px 0 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); break-inside: avoid; }
 .figure svg { width: 100%; height: auto; display: block; }
@@ -213,6 +214,22 @@ def _sekil_html(svg, no, aciklama, dar=False):
             '</div>')  # Şekil açıklama metni gösterilmez (kullanıcı isteği)
 
 
+KURUM_ADLARI = [
+    ("FAO", "FAO"),
+    ("IGC", "Uluslararası Tahıl Konseyi (IGC)"),
+    ("USDA", "USDA"),
+    ("Baltic Exchange", "Baltic Exchange"),
+    ("Baltic Dry", "Investing.com"),
+    ("Baltic Panamax", "Investing.com"),
+    ("Black Sea", "Investing.com"),
+    ("CME", "CME Group"),
+    ("ICE", "ICE Futures"),
+    ("Dalian", "Dalian Ticaret Borsası"),
+    ("Bursa Malaysia", "Bursa Malaysia"),
+    ("London Metal", "London Metal Exchange"),
+]
+
+
 def _kaynak_siteleri(haberler):
     """Kaynakçada link/başlık yok, sadece site adları. Reddit adı geçmez,
     gazeteciler isimle anılmaz (kullanıcı tercihi)."""
@@ -228,7 +245,8 @@ def _kaynak_siteleri(haberler):
         elif k.startswith("LinkedIn/Bloomberg"):
             ad = "Bloomberg HT ve tarım gazetecilerinin paylaşımları"
         else:
-            ad = k
+            # Endeks/borsa görevleri kaynak adıyla değil, yayıncı kurumla anılır
+            ad = next((v for on, v in KURUM_ADLARI if k.startswith(on)), k)
         if ad not in siteler:
             siteler.append(ad)
     return siteler + ["TÜRİB ve TMO (fiyat verileri)"]
