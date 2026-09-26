@@ -18,7 +18,7 @@ BASE_DIR = Path(__file__).parent
 def veri_topla_ve_kaydet(tarih=None):
     tarih = tarih or datetime.now()
     tarih_klasor_adi = tarih.strftime("%d-%m-%Y")
-    cikti_klasoru = BASE_DIR / tarih_klasor_adi
+    cikti_klasoru = BASE_DIR / "ham-veri" / tarih_klasor_adi
     cikti_klasoru.mkdir(parents=True, exist_ok=True)
 
     load_dotenv(BASE_DIR / ".env")

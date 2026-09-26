@@ -41,7 +41,7 @@ gerektirmez, bu Claude Chat/Code oturumunun kendisi editörlük yapıyor.
 
 ### 1. Veri topla (mekanik, script) — ÖNCE VAR MI DİYE BAK
 
-Bugünün tarihiyle bir `<GG-AA-YYYY>/veri.json` zaten varsa (ör. kullanıcı
+Bugünün tarihiyle `ham-veri/<GG-AA-YYYY>/veri.json` zaten varsa (ör. kullanıcı
 "bülteni hazırla" deyip aynı gün az önce de istemiş olabilir), o dosyayı
 DOĞRUDAN KULLAN — `veri_topla.py`'yi tekrar çalıştırma. Reddit + Browser Use
 adımları birkaç dakika sürüyor, veri zaten varsa bunu tekrarlamak gereksiz
@@ -50,10 +50,10 @@ tekrar çalıştır.
 
 ```bash
 cd gida-haberleri
-ls "$(date +%d-%m-%Y)/veri.json" 2>/dev/null && echo "VAR, tekrar çekme" || python3 veri_topla.py
+ls "ham-veri/$(date +%d-%m-%Y)/veri.json" 2>/dev/null && echo "VAR, tekrar çekme" || python3 veri_topla.py
 ```
 
-`<GG-AA-YYYY>/veri.json` üretir: `{"tarih", "haberler": [...], "fiyat": [...]}`.
+`ham-veri/<GG-AA-YYYY>/veri.json` üretir: `{"tarih", "haberler": [...], "fiyat": [...]}`.
 - `haberler`: `{kaynak, baslik, ozet, link, tarih, kategori, gorsel_url}` —
   `kategori` ya `"hububat_ve_diger"` ya `"meyve_sebze"` (anahtar kelime + regex
   word-boundary ile otomatik etiketlenmiş — "temmuz" gibi kelimelerin içinde
@@ -107,15 +107,18 @@ import json
 from pathlib import Path
 from html_uret import bulten_html_olustur, pdf_uret
 
-d = json.load(open("<tarih-klasoru>/veri.json"))
+d = json.load(open("ham-veri/<tarih-klasoru>/veri.json"))
 turib_ozet = [r for r in d["fiyat"] if r["kaynak"].startswith("TURIB")]
 tmo_ozet = [r for r in d["fiyat"] if r["kaynak"] == "TMO"]
 
 paragraflar = { ... }  # adım 2
 
 html_metni = bulten_html_olustur(d["tarih"], "logo.png", paragraflar, turib_ozet, tmo_ozet, d["haberler"])
-pdf_yolu = Path(f"{d['tarih']}/gunluk_gida_ozet_{d['tarih']}.pdf")
-pdf_uret(html_metni, pdf_yolu, Path(d['tarih']))
+# Nihai bülten ham-veri/'nin DIŞINDA, kendi tarihli klasöründe tutulur
+cikti_klasoru = Path(d["tarih"])
+cikti_klasoru.mkdir(exist_ok=True)
+pdf_yolu = cikti_klasoru / f"gunluk_gida_ozet_{d['tarih']}.pdf"
+pdf_uret(html_metni, pdf_yolu, cikti_klasoru)
 print("PDF:", pdf_yolu)
 ```
 
