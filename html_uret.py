@@ -67,6 +67,37 @@ h1, h2, h3, .display {
   letter-spacing: 0.05em;
 }
 .content { padding: 30px 40px 0 40px; }
+
+.stat-row {
+  display: flex;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  margin-bottom: 32px;
+}
+.stat-card {
+  flex: 1;
+  min-width: 0;
+  background: var(--paper-2);
+  padding: 14px 16px;
+}
+.stat-card .stat-label {
+  font-size: 7.5pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(26,21,18,0.55);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stat-card .stat-value {
+  font-family: 'Oswald', Verdana, sans-serif;
+  font-size: 15pt;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 .eyebrow {
   font-size: 8.5pt;
   font-weight: 700;
@@ -90,7 +121,12 @@ h1, h2, h3, .display {
   padding-left: 10px;
   margin-bottom: 8px;
 }
-.subsection p { margin: 0 0 10px 0; text-align: justify; }
+.subsection .paragraflar {
+  column-count: 2;
+  column-gap: 28px;
+  column-rule: 1px solid var(--line);
+}
+.subsection p { margin: 0 0 10px 0; text-align: justify; break-inside: avoid; }
 .divider { border: none; border-top: 1px solid var(--line); margin: 24px 0; }
 
 table.pricetable { width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 9pt; }
@@ -159,7 +195,26 @@ def _fiyat_tablosu_html(satirlar):
 
 
 def _paragraflar_html(paragraflar):
-    return "".join(f"<p>{html.escape(p)}</p>" for p in paragraflar)
+    if not paragraflar:
+        return ""
+    return '<div class="paragraflar">' + "".join(f"<p>{html.escape(p)}</p>" for p in paragraflar) + "</div>"
+
+
+def _stat_kartlari_html(turib_ozet, tmo_ozet, adet=4):
+    tumu = [r for r in (turib_ozet + tmo_ozet) if not r.get("anomali") and r.get("degisim_yuzde") is not None]
+    tumu.sort(key=lambda r: abs(r["degisim_yuzde"]), reverse=True)
+    secilenler = tumu[:adet]
+    if not secilenler:
+        return ""
+    kartlar = []
+    for r in secilenler:
+        kartlar.append(
+            '<div class="stat-card">'
+            f'<div class="stat-label">{html.escape(r["urun"])} · {html.escape(r["kaynak"])}</div>'
+            f'<div class="stat-value">{_pill(r["degisim_yuzde"])}</div>'
+            "</div>"
+        )
+    return '<div class="stat-row">' + "".join(kartlar) + "</div>"
 
 
 def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet, haberler):
@@ -193,21 +248,10 @@ def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet,
   </div>
 
   <div class="content">
-    <div class="section">
-      <div class="eyebrow">Bölüm 1</div>
-      <div class="section-title">Global Piyasa</div>
-      <div class="subsection">
-        <div class="subsection-title">Hububat / Genel Tarım-Gıda</div>
-        {_paragraflar_html(paragraflar.get('global_hububat', []))}
-      </div>
-      <div class="subsection">
-        <div class="subsection-title">Meyve / Sebze</div>
-        {_paragraflar_html(paragraflar.get('global_meyve_sebze', []))}
-      </div>
-    </div>
+    {_stat_kartlari_html(turib_ozet, tmo_ozet)}
 
     <div class="section">
-      <div class="eyebrow">Bölüm 2</div>
+      <div class="eyebrow">Bölüm 1</div>
       <div class="section-title">Türkiye</div>
       <div class="subsection">
         <div class="subsection-title">Hububat / Genel Tarım-Gıda</div>
@@ -216,6 +260,19 @@ def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet,
       <div class="subsection">
         <div class="subsection-title">Meyve / Sebze</div>
         {_paragraflar_html(paragraflar.get('turkiye_meyve_sebze', []))}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="eyebrow">Bölüm 2</div>
+      <div class="section-title">Global Piyasa</div>
+      <div class="subsection">
+        <div class="subsection-title">Hububat / Genel Tarım-Gıda</div>
+        {_paragraflar_html(paragraflar.get('global_hububat', []))}
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">Meyve / Sebze</div>
+        {_paragraflar_html(paragraflar.get('global_meyve_sebze', []))}
       </div>
     </div>
 

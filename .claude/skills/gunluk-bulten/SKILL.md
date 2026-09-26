@@ -41,8 +41,8 @@ gerektirmez, bu Claude Chat/Code oturumunun kendisi editörlük yapıyor.
 
 ### 1. Veri topla (mekanik, script) — ÖNCE VAR MI DİYE BAK
 
-Bugünün tarihiyle `ham-veri/<GG-AA-YYYY>/veri.json` zaten varsa (ör. kullanıcı
-"bülteni hazırla" deyip aynı gün az önce de istemiş olabilir), o dosyayı
+Bugünün tarihiyle `ham-veri/<GG-AA-YYYY>/` klasörü zaten varsa (ör. kullanıcı
+"bülteni hazırla" deyip aynı gün az önce de istemiş olabilir), o klasörü
 DOĞRUDAN KULLAN — `veri_topla.py`'yi tekrar çalıştırma. Reddit + Browser Use
 adımları birkaç dakika sürüyor, veri zaten varsa bunu tekrarlamak gereksiz
 bekleme yaratır. Kullanıcı özellikle "yeniden çek/güncelle" derse o zaman
@@ -50,17 +50,25 @@ tekrar çalıştır.
 
 ```bash
 cd gida-haberleri
-ls "ham-veri/$(date +%d-%m-%Y)/veri.json" 2>/dev/null && echo "VAR, tekrar çekme" || python3 veri_topla.py
+ls "ham-veri/$(date +%d-%m-%Y)/tarih.json" 2>/dev/null && echo "VAR, tekrar çekme" || python3 veri_topla.py
 ```
 
-`ham-veri/<GG-AA-YYYY>/veri.json` üretir: `{"tarih", "haberler": [...], "fiyat": [...]}`.
-- `haberler`: `{kaynak, baslik, ozet, link, tarih, kategori, gorsel_url}` —
-  `kategori` ya `"hububat_ve_diger"` ya `"meyve_sebze"` (anahtar kelime + regex
-  word-boundary ile otomatik etiketlenmiş — "temmuz" gibi kelimelerin içinde
-  geçen "muz" gibi yanlış eşleşmelere karşı zaten düzeltildi, ekstra kontrol gerekmez)
-- `fiyat`: TÜM borsa kaynaklarının fiyat karşılaştırması, ama bültende SADECE
-  TÜRİB (`kaynak.startswith("TURIB")`) ve TMO (`kaynak == "TMO"`) kullanılıyor;
-  Konya/ETB/Bandırma/TDAG/Kırklareli bu bültenin kapsamı dışında
+`ham-veri/<GG-AA-YYYY>/` klasörünü, tek bir json yerine ayrı dosyalar halinde üretir:
+- `haberler.json`: liste, her öğe `{kaynak, baslik, ozet, link, tarih, kategori,
+  gorsel_url, gorsel_dosya}` — `kategori` ya `"hububat_ve_diger"` ya
+  `"meyve_sebze"` (anahtar kelime + regex word-boundary ile otomatik
+  etiketlenmiş — "temmuz" gibi kelimelerin içinde geçen "muz" gibi yanlış
+  eşleşmelere karşı zaten düzeltildi, ekstra kontrol gerekmez)
+- `fiyatlar.xlsx`: TÜM borsa kaynaklarının fiyat karşılaştırması (Kaynak, Ürün,
+  Birim, önceki/bugünkü tarih+fiyat, Değişim %, Anomali sütunları) — ama
+  bültende SADECE TÜRİB (`kaynak.startswith("TURIB")`) ve TMO
+  (`kaynak == "TMO"`) satırları kullanılıyor; Konya/ETB/Bandırma/TDAG/
+  Kırklareli bu bültenin kapsamı dışında
+- `gorseller/`: haberlerin kapak görselleri (dosya adı haberler.json'daki
+  `gorsel_dosya` alanıyla eşleşir), tasarım/ilham veya bültene görsel eklemek
+  istersen kullanabilirsin
+- `tarih.json`: `{"tarih": "GG-AA-YYYY"}` — sadece "bu klasör bugüne mi ait"
+  kontrolü için
 
 Reddit + Browser Use nedeniyle toplam birkaç dakika sürebilir, sabırlı ol —
 uzun sürüyor diye kesme, `run_in_background` ile çalıştırıp bekleyebilirsin.
