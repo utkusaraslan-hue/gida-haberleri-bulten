@@ -198,7 +198,7 @@ def _tmo_il_tablosu_html(satirlar):
         )
     return (
         '<table class="pricetable"><thead><tr>'
-        "<th>İl</th><th>Ürün</th><th>Önceki</th><th>Bugün</th><th>Değişim</th>"
+        "<th>Yer</th><th>Ürün</th><th>Önceki</th><th>Bugün</th><th>Değişim</th>"
         "</tr></thead><tbody>" + "".join(satir_html) + "</tbody></table>"
     )
 
@@ -365,7 +365,7 @@ def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet,
       <div class="section-title">TMO Fiyatları</div>
       {_sekil_html(tmo_grafigi_svg(tmo_ozet), 2, "TMO satış fiyatlarında (TL/ton) son iki yayın günü arasındaki yüzde değişim. Renk ve desen kodlaması Şekil 1 ile aynıdır; fiyatı 0 gelen ürünler gösterilmemiştir.", dar=True)}
       {_fiyat_tablosu_html([r for r in tmo_ozet if not r.get('anomali')])}
-      {f'<div class="subsection-title" style="margin-top:18px">İl Bazında Tüm TMO Fiyatları</div>' if tmo_il_ilce else ''}
+      {f'<div class="subsection-title" style="margin-top:18px">Yer Bazında Tüm TMO Fiyatları</div>' if tmo_il_ilce else ''}
       {_tmo_il_tablosu_html(tmo_il_ilce) if tmo_il_ilce else ''}
     </div>
 

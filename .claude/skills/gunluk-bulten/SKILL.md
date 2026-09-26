@@ -213,7 +213,7 @@ print("PDF:", pdf_yolu)
 ```
 
 `bulten_html_olustur`'a verilen `tmo_il_ilce` parametresi, TMO Fiyatları
-bölümünün altına ürün bazlı özetin YANINA, İL bazında (ilçe değil, kullanıcı isteği) TÜM TMO
+bölümünün altına ürün bazlı özetin YANINA, YER bazında (ilçe değil; başlık/sütun "Yer" çünkü Polatlı gibi il olmayan yerler de var, kullanıcı isteği) TÜM TMO
 fiyatlarını listeleyen ikinci bir tablo ekler (kullanıcı isteği: "il il ilçe
 ilçe ne varsa" tüm TMO fiyatları görünsün, sadece özet değil).
 
