@@ -140,11 +140,13 @@ def _kaynak_adi(kod):
 
 
 def _fiyat_tablosu_html(satirlar):
+    # Bugünkü fiyatı 0/boş gelen satırlar gösterilmez (kullanıcı isteği)
+    satirlar = [r for r in satirlar if r.get("ort_fiyat_son")]
     if not satirlar:
         return "<p>Veri alınamadı.</p>"
     satir_html = []
     for r in satirlar:
-        onceki = r["ort_fiyat_onceki"] if r["ort_fiyat_onceki"] is not None else "-"
+        onceki = r["ort_fiyat_onceki"] if r["ort_fiyat_onceki"] else "-"
         satir_html.append(
             f"<tr><td>{html.escape(_kaynak_adi(r['kaynak']))}</td><td>{html.escape(r['urun'])}</td>"
             f"<td>{onceki}</td><td>{r['ort_fiyat_son']} {html.escape(r['birim'] or '')}</td>"
@@ -158,11 +160,13 @@ def _fiyat_tablosu_html(satirlar):
 
 
 def _tmo_il_ilce_tablosu_html(satirlar):
+    # Bugünkü fiyatı 0/boş gelen satırlar gösterilmez (kullanıcı isteği)
+    satirlar = [r for r in satirlar if r.get("ort_fiyat_son")]
     if not satirlar:
         return "<p>Veri alınamadı.</p>"
     satir_html = []
     for r in satirlar:
-        onceki = r["ort_fiyat_onceki"] if r["ort_fiyat_onceki"] is not None else "-"
+        onceki = r["ort_fiyat_onceki"] if r["ort_fiyat_onceki"] else "-"
         yer = r["il"] or "-"
         if r.get("ilce"):
             yer += f" / {r['ilce']}"
