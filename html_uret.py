@@ -11,6 +11,8 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
+from grafik_uret import tmo_grafigi_svg, turib_grafigi_svg
+
 CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
 
@@ -23,9 +25,12 @@ CSS = """
   --wheat: #c9a339;
   --wheat-light: #e4c869;
   --moss: #33654a;
-  --moss-pill: #e4efe7;
   --rust: #9b3a2c;
-  --rust-pill: #f6e3df;
+  /* Fiyat değişimi: renk-körü dostu Okabe-Ito (artış mavi, düşüş turuncu) */
+  --up: #0072B2;
+  --up-pill: #e0edf6;
+  --down: #b34d00;
+  --down-pill: #fbe7da;
   --line: rgba(26,21,18,0.16);
 }
 * { box-sizing: border-box; }
@@ -106,7 +111,10 @@ h1, h2, h3, .display {
   color: var(--wheat);
   margin: 0 0 4px 0;
 }
-.section { margin-bottom: 30px; page-break-inside: avoid; }
+/* Bölümler sayfaya bölünebilir (yoksa uzun metin bölümü sonraki sayfaya atlayıp
+   1. sayfayı boş bırakıyor); başlıklar ise içerikten ayrılmasın */
+.section { margin-bottom: 30px; }
+.eyebrow, .section-title, .subsection-title { break-after: avoid; page-break-after: avoid; }
 .section-title {
   font-size: 16pt;
   border-bottom: 2px solid var(--ink);
@@ -148,8 +156,8 @@ table.pricetable td {
 }
 table.pricetable tr:nth-child(even) td { background: var(--paper-2); }
 .pill { display: inline-block; padding: 1px 8px; font-weight: 700; font-size: 8.5pt; }
-.pill.up { background: var(--moss-pill); color: var(--moss); }
-.pill.down { background: var(--rust-pill); color: var(--rust); }
+.pill.up { background: var(--up-pill); color: var(--up); }
+.pill.down { background: var(--down-pill); color: var(--down); }
 .pill.flat { background: var(--paper-2); color: var(--ink); opacity: 0.6; }
 
 .kaynakca { font-size: 8pt; color: rgba(26,21,18,0.7); }
@@ -164,6 +172,11 @@ table.pricetable tr:nth-child(even) td { background: var(--paper-2); }
   display: flex;
   justify-content: space-between;
 }
+.figure { margin: 4px 0 18px 0; padding: 14px 16px 10px 16px; background: var(--paper-2); border: 1px solid var(--line); page-break-inside: avoid; }
+.figure svg { width: 100%; height: auto; display: block; }
+.figure.dar svg { width: 64%; }
+.figcaption { font-size: 7.5pt; color: rgba(26,21,18,0.7); margin-top: 8px; line-height: 1.45; }
+.figcaption b { color: var(--ink); }
 .uyari { font-size: 8.5pt; color: var(--rust); font-style: italic; margin-top: 10px; }
 """
 
@@ -215,6 +228,13 @@ def _stat_kartlari_html(turib_ozet, tmo_ozet, adet=4):
             "</div>"
         )
     return '<div class="stat-row">' + "".join(kartlar) + "</div>"
+
+
+def _sekil_html(svg, no, aciklama, dar=False):
+    if not svg:
+        return ""
+    return (f'<div class="figure{' dar' if dar else ''}">{svg}'
+            f'<div class="figcaption"><b>Şekil {no}.</b> {aciklama}</div></div>')
 
 
 def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet, haberler):
@@ -281,12 +301,14 @@ def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet,
     <div class="section">
       <div class="eyebrow">Bölüm 3</div>
       <div class="section-title">TÜRİB Fiyatları</div>
+      {_sekil_html(turib_grafigi_svg(turib_ozet), 1, "Her ürün/endeks için kendi son iki işlem gününe göre ortalama fiyattaki yüzde değişim. Mavi düz çubuk artışı, turuncu taralı çubuk düşüşü gösterir. Tek gözlem karşılaştırması olduğundan hata çubuğu yoktur; değişimi hesaplanamayan ve anomali işaretli satırlar dışarıda bırakılmıştır.")}
       {_fiyat_tablosu_html([r for r in turib_ozet if not r.get('anomali')])}
     </div>
 
     <div class="section">
       <div class="eyebrow">Bölüm 4</div>
       <div class="section-title">TMO Fiyatları</div>
+      {_sekil_html(tmo_grafigi_svg(tmo_ozet), 2, "TMO satış fiyatlarında (TL/ton) son iki yayın günü arasındaki yüzde değişim. Renk ve desen kodlaması Şekil 1 ile aynıdır; fiyatı 0 gelen ve anomali işaretli ürünler dahil edilmemiştir.", dar=True)}
       {_fiyat_tablosu_html([r for r in tmo_ozet if not r.get('anomali')])}
       {uyari_html}
     </div>
