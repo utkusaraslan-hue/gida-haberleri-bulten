@@ -78,22 +78,26 @@ web-slop kontrol listesinin ÜSTÜNE şunlar da geçerli:
 
 ## 4. Bizim kilitli tasarım sistemimiz (bu projede DEĞİŞTİRİLMEDEN kullanılacak)
 
-Kaynak: `yine-bi-agent/website/web/src/app/globals.css` (Sarıaslan Ticaret
-marka kimliği). Bunlar rastgele/AI-default değil, gerçek bir markadan
-türetildi — bu yüzden "vibecoded" hissi vermiyorlar, kullanmaya devam et:
+26-09-2026'da kullanıcı isteğiyle güncellendi (eski koyu "silo" header +
+Oswald/Verdana sistemi bırakıldı). Güncel sistem `html_uret.py` ve
+`grafik_uret.py` içinde:
 
-- **Renkler**: ink `#1a1512`, paper `#f6f5f1`, silo (koyu header) `#171410`,
-  wheat (TEK vurgu rengi) `#c9a339`/`#e4c869`. Fiyat artış/düşüş için
-  renk-körü dostu turuncu/mavi (Okabe-Ito) — moss/rust (yeşil/kırmızı) DEĞİL.
-- **Tipografi**: başlıklar Oswald (büyük harf, kalın, sıkışık) — Inter/Roboto
-  DEĞİL. Gövde Verdana.
-- **Köşe/gölge**: köşe yuvarlaklığı YOK (keskin köşe), gölge YOK — bunun
-  yerine 1px ince çizgiler ("hairline border") kullanılıyor. Bu kasıtlı bir
-  "print/ticaret bülteni" estetiği — rastgele "modernleştirmeye" çalışıp
-  rounded-corner/shadow ekleme, bu tam olarak slop'a geri dönüş olur.
-- **Kart kullanımı**: SADECE gerçekten tek bakışta özet gerektiren veri
-  (stat/KPI kartları) için — haber metni, paragraf gibi düz içerik kart
-  İÇİNE KONMAZ.
+- **Renkler**: ink `#1a1512` metin, beyaz zemin; wheat `#c9a339` TEK vurgu
+  rengi (üst başlık çizgisi, "Bölüm" etiketleri, alt başlık çubuğu). Koyu/siyah
+  banner YOK — header ve tablo başlıkları beyaz zemin + ince siyah çizgi.
+  Fiyat artış/düşüş için renk-körü dostu mavi/turuncu (Okabe-Ito) — yeşil/
+  kırmızı DEĞİL.
+- **Tipografi**: Times New Roman, tüm yazılar 12 pt (gövde, tablo, kart,
+  grafik, açıklama, kaynakça). Başlık/gövde ayrımı font değişimiyle değil,
+  boyut ve kalınlıkla yapılır: sayfa başlığı 22, bölüm 18, alt bölüm 14 pt,
+  hepsi kalın.
+- **Köşe/gölge**: köşe yuvarlaklığı YOK, gölge YOK — 1px ince çizgiler.
+  Rounded-corner/shadow ekleme, bu tam olarak slop'a geri dönüş olur.
+- **Kart kullanımı**: SADECE en büyük fiyat değişimlerini gösteren üstteki
+  KPI kartları. Haber metni, paragraf ve grafikler kart İÇİNE KONMAZ;
+  grafikler üst/alt ince çizgiyle ayrılır.
+- **İçerik dili**: Başlık "Günlük Özet". Reddit adı ve gazeteci isimleri
+  metinde geçmez; kaynakça sadece site adları (link yok); alt bilgi yok.
 
 ## 5. Her yeni tasarım denemesinden önce/sonra yapılacak
 

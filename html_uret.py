@@ -108,6 +108,8 @@ table.pricetable td { padding: 5px 8px; border-bottom: 1px solid var(--line); fo
 table.pricetable tr:nth-child(even) td { background: var(--paper-2); }
 table.pricetable thead { display: table-header-group; }
 table.pricetable tr { break-inside: avoid; }
+/* Kaynak ve sayı sütunları satır kaymasın; sadece ürün adı sarılabilir */
+table.pricetable td:not(:nth-child(2)), table.pricetable th { white-space: nowrap; }
 .pill { display: inline-block; padding: 1px 8px; font-weight: 700; font-size: 12pt; }
 .pill.up { background: var(--up-pill); color: var(--up); }
 .pill.down { background: var(--down-pill); color: var(--down); }
@@ -115,7 +117,8 @@ table.pricetable tr { break-inside: avoid; }
 
 .kaynakca { font-size: 12pt; }
 .kaynakca ul { margin: 0; padding-left: 18px; }
-.figure { margin: 4px 0 18px 0; padding: 12px 14px 10px 14px; background: var(--paper-2); border: 1px solid var(--line); break-inside: avoid; }
+/* Grafik kart içine konmaz (tasarim.md: kart sadece KPI için); ince çizgiyle ayrılır */
+.figure { margin: 4px 0 18px 0; padding: 10px 0 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); break-inside: avoid; }
 .figure svg { width: 100%; height: auto; display: block; }
 .figure.dar svg { width: 72%; }
 .figcaption { font-size: 12pt; margin-top: 8px; line-height: 1.4; }
