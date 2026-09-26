@@ -1,0 +1,11 @@
+.env
+*.db
+__pycache__/
+*.pyc
+_banner.png
+_grafik*.png
+_img_*.jpg
+[0-9]*-[0-9]*-[0-9]*/
+MOCKUP-*
+*page-*.jpg
+.DS_Store
