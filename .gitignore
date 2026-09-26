@@ -9,3 +9,6 @@ _img_*.jpg
 MOCKUP-*
 *page-*.jpg
 .DS_Store
+_veri_onizleme.json
+_paragraflar.json
+onizleme*.jpg

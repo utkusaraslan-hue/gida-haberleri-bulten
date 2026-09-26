@@ -1,7 +1,5 @@
 requests
 beautifulsoup4
 feedparser
-python-docx
 python-dotenv
-matplotlib
-Pillow
+playwright
