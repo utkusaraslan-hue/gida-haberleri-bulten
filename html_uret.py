@@ -90,7 +90,7 @@ h1 { font-family: inherit; font-weight: 700; margin: 0; }
   margin-bottom: 8px;
 }
 .subsection .paragraflar { column-count: 2; column-gap: 28px; column-rule: 1px solid var(--line); }
-.subsection p { margin: 0 0 10px 0; text-align: justify; break-inside: avoid; }
+.subsection p { margin: 0 0 10px 0; text-align: justify; }
 .divider { border: none; border-top: 1px solid var(--line); margin: 22px 0; }
 
 table.pricetable { width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 12pt; }

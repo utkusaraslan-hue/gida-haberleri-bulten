@@ -132,6 +132,11 @@ gazeteci-ismi-gizleme kuralının kapsamı dışında.
 
 Kurallar:
 - Sadece `veri.json`'daki gerçek haberlerden bilgi kullan, rakam/olay uydurma.
+- **Ayrıntılı ve dengeli yaz (kullanıcı isteği, 26-09-2026):** `haberler.json`'daki
+  HER haber ve endeks/borsa kalemi (FAO, IGC, USDA, CME, ICE, DCE, Bursa Malaysia,
+  LME, Baltic vb.) en az bir kısa cümleyle geçmeli, bilgi atlama. Ama metin sayı
+  listesi olmamalı: her kalemde en fazla 1-2 anahtar sayı ver, gerisini sözle
+  anlat (artış/düşüş/yatay). Uzun ve dolu paragraflar serbest; sayı yığını değil.
 - İngilizce haberleri (FBN, Reddit) Türkçeye çevirip sentezle.
 - **Reddit adını metinde ASLA geçirme** (r/farming, r/FoodNews vb. de yok):
   "yurt dışında konuşulan", "yabancı sosyal medyada dönen", "yurt dışı tarım
