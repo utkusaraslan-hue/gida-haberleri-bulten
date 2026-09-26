@@ -45,6 +45,7 @@ def fiyat_ozeti_getir(urun_filtre=None):
                    AVG(COALESCE(ort_fiyat, kapanis_fiyat, (min_fiyat + max_fiyat) / 2.0)) as ort
             FROM fiyatlar
             WHERE COALESCE(ort_fiyat, kapanis_fiyat, min_fiyat, max_fiyat) IS NOT NULL
+                  AND COALESCE(ort_fiyat, kapanis_fiyat, (min_fiyat + max_fiyat) / 2.0) > 0
                   AND urun IS NOT NULL AND urun != ''
         """
         params = []
@@ -118,6 +119,7 @@ def tmo_il_ilce_fiyatlari_getir():
             FROM fiyatlar
             WHERE kaynak = 'TMO'
                   AND COALESCE(ort_fiyat, kapanis_fiyat, min_fiyat, max_fiyat) IS NOT NULL
+                  AND COALESCE(ort_fiyat, kapanis_fiyat, (min_fiyat + max_fiyat) / 2.0) > 0
                   AND urun IS NOT NULL AND urun != ''
             GROUP BY il, ilce, urun, birim, tarih
             ORDER BY tarih DESC

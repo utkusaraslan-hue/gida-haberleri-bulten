@@ -142,7 +142,8 @@ def _kaynak_adi(kod):
 
 def _fiyat_tablosu_html(satirlar):
     # Bugünkü fiyatı 0/boş gelen satırlar gösterilmez (kullanıcı isteği)
-    satirlar = [r for r in satirlar if r.get("ort_fiyat_son")]
+    # Sıfır fiyatlı, karşılaştırılamayan (önceki fiyatı 0/boş) ve hatalı satırlar hiç gösterilmez
+    satirlar = [r for r in satirlar if r.get("ort_fiyat_son") and r.get("degisim_yuzde") is not None and not r.get("anomali")]
     if not satirlar:
         return "<p>Veri alınamadı.</p>"
     satir_html = []
@@ -162,7 +163,8 @@ def _fiyat_tablosu_html(satirlar):
 
 def _tmo_il_ilce_tablosu_html(satirlar):
     # Bugünkü fiyatı 0/boş gelen satırlar gösterilmez (kullanıcı isteği)
-    satirlar = [r for r in satirlar if r.get("ort_fiyat_son")]
+    # Sıfır fiyatlı, karşılaştırılamayan (önceki fiyatı 0/boş) ve hatalı satırlar hiç gösterilmez
+    satirlar = [r for r in satirlar if r.get("ort_fiyat_son") and r.get("degisim_yuzde") is not None and not r.get("anomali")]
     if not satirlar:
         return "<p>Veri alınamadı.</p>"
     satir_html = []
@@ -181,6 +183,32 @@ def _tmo_il_ilce_tablosu_html(satirlar):
         "<th>İl / İlçe</th><th>Ürün</th><th>Önceki</th><th>Bugün</th><th>Değişim</th>"
         "</tr></thead><tbody>" + "".join(satir_html) + "</tbody></table>"
     )
+
+
+def _tmo_ozet_il_ilceden(satirlar):
+    """Ürün bazlı TMO özeti; sıfır fiyatlı ve anomali işaretli il/ilçe satırları
+    ortalamaya HİÇ girmez (kullanıcı isteği: 0'lar ve hatalı veri rapora girmez).
+    Önceki/bugün ortalaması aynı yerlerden alınır ki değişim tutarlı olsun."""
+    gecerli = [r for r in satirlar if not r.get("anomali") and (r.get("ort_fiyat_son") or 0) > 0]
+    urunler = {}
+    for r in gecerli:
+        urunler.setdefault((r["urun"], r["birim"]), []).append(r)
+    sonuc = []
+    for (urun, birim), satir in sorted(urunler.items()):
+        cift = [r for r in satir if (r.get("ort_fiyat_onceki") or 0) > 0]
+        if cift:
+            son = sum(r["ort_fiyat_son"] for r in cift) / len(cift)
+            onceki = sum(r["ort_fiyat_onceki"] for r in cift) / len(cift)
+            degisim = round((son - onceki) / onceki * 100, 2)
+            onceki_deger = round(onceki, 2)
+        else:
+            continue  # önceki fiyatı doğrulanamayan ürün rapora girmez
+        sonuc.append({
+            "kaynak": "TMO", "urun": urun, "birim": birim,
+            "ort_fiyat_son": round(son, 2), "ort_fiyat_onceki": onceki_deger,
+            "degisim_yuzde": degisim, "anomali": False,
+        })
+    return sonuc
 
 
 def _paragraflar_html(paragraflar):
@@ -258,6 +286,8 @@ def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet,
         'turkiye_hububat': [p1, p2], 'turkiye_meyve_sebze': [p1, p2],
     }"""
     # Anomali satırları tablolardan sessizce çıkarılır; PDF'te not gösterilmez (kullanıcı isteği)
+    if tmo_il_ilce:
+        tmo_ozet = _tmo_ozet_il_ilceden(tmo_il_ilce)
 
     kaynakca_items = "".join(f"<li>{html.escape(k)}</li>" for k in _kaynak_siteleri(haberler))
 

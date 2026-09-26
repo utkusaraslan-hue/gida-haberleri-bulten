@@ -132,6 +132,12 @@ gazeteci-ismi-gizleme kuralının kapsamı dışında.
 
 Kurallar:
 - Sadece `veri.json`'daki gerçek haberlerden bilgi kullan, rakam/olay uydurma.
+- **0 fiyatlı ve hatalı veri RAPORA HİÇ GİRMEZ (kullanıcı isteği, 26-09-2026):**
+  ne tabloda, ne grafikte, ne KPI kartında, ne de metinde. Fiyatı 0 olan,
+  önceki fiyatı 0/boş olduğu için karşılaştırılamayan ve `anomali` işaretli
+  satırlar dışarıda kalır; TMO özeti il/ilçe satırlarından bu satırlar
+  çıkarılarak hesaplanır (`html_uret.py` `_tmo_ozet_il_ilceden`, `tmo_ozet.py`
+  SQL'i de sıfırları okumaz). Paragraflarda da bu satırlara ait rakam kullanma.
 - **Ayrıntılı ve dengeli yaz (kullanıcı isteği, 26-09-2026):** `haberler.json`'daki
   HER haber ve endeks/borsa kalemi (FAO, IGC, USDA, CME, ICE, DCE, Bursa Malaysia,
   LME, Baltic vb.) en az bir kısa cümleyle geçmeli, bilgi atlama. Ama metin sayı
