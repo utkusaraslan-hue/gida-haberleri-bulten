@@ -93,6 +93,69 @@ def fiyat_ozeti_getir(urun_filtre=None):
         conn.close()
 
 
+def tmo_il_ilce_fiyatlari_getir():
+    """TMO fiyatlarını il/ilçe bazında, ÜRÜN'e göre AGREGE ETMEDEN döndürür
+    (fiyat_ozeti_getir tüm illeri tek bir ürün satırında ortalıyor — burada
+    her il/ilçe kendi satırı olarak kalır). Kullanıcı "il il ilçe ilçe ne
+    varsa" tüm TMO fiyatlarını görmek istedi.
+
+    Dönüş: [{il, ilce, urun, birim, tarih_son, ort_fiyat_son, tarih_onceki,
+             ort_fiyat_onceki, degisim_yuzde, anomali}]
+    """
+    try:
+        db_path = _db_indir()
+    except Exception as e:
+        print(f"[uyari] TMO/TÜRİB veritabanı indirilemedi: {e}")
+        return []
+
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+
+        sorgu = """
+            SELECT il, ilce, urun, birim, tarih,
+                   AVG(COALESCE(ort_fiyat, kapanis_fiyat, (min_fiyat + max_fiyat) / 2.0)) as ort
+            FROM fiyatlar
+            WHERE kaynak = 'TMO'
+                  AND COALESCE(ort_fiyat, kapanis_fiyat, min_fiyat, max_fiyat) IS NOT NULL
+                  AND urun IS NOT NULL AND urun != ''
+            GROUP BY il, ilce, urun, birim, tarih
+            ORDER BY tarih DESC
+        """
+        satirlar = conn.execute(sorgu).fetchall()
+        veri = {}
+        for s in satirlar:
+            anahtar = (s["il"] or "", s["ilce"] or "", s["urun"], s["birim"])
+            veri.setdefault(anahtar, {})[s["tarih"]] = s["ort"]
+
+        sonuc = []
+        for (il, ilce, urun, birim), gunler in veri.items():
+            gun_tarihleri = sorted(gunler.keys(), reverse=True)
+            if not gun_tarihleri:
+                continue
+            son_tarih = gun_tarihleri[0]
+            onceki_tarih = gun_tarihleri[1] if len(gun_tarihleri) > 1 else None
+            son = gunler[son_tarih]
+            onceki = gunler.get(onceki_tarih) if onceki_tarih else None
+            degisim = ((son - onceki) / onceki * 100) if onceki else None
+            anomali = degisim is not None and abs(degisim) > 70
+            sonuc.append({
+                "il": il,
+                "ilce": ilce,
+                "urun": urun,
+                "birim": birim,
+                "tarih_son": son_tarih,
+                "ort_fiyat_son": round(son, 2),
+                "tarih_onceki": onceki_tarih,
+                "ort_fiyat_onceki": round(onceki, 2) if onceki is not None else None,
+                "degisim_yuzde": round(degisim, 2) if degisim is not None and not anomali else None,
+                "anomali": anomali,
+            })
+        return sorted(sonuc, key=lambda x: (x["il"], x["ilce"], x["urun"]))
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     for satir in fiyat_ozeti_getir():
         print(satir)

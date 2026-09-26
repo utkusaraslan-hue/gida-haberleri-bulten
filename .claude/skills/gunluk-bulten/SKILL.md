@@ -120,22 +120,47 @@ kullan (Bash ile inline Python):
 ```python
 import json
 from pathlib import Path
+import openpyxl
 from html_uret import bulten_html_olustur, pdf_uret
 
-d = json.load(open("ham-veri/<tarih-klasoru>/veri.json"))
-turib_ozet = [r for r in d["fiyat"] if r["kaynak"].startswith("TURIB")]
-tmo_ozet = [r for r in d["fiyat"] if r["kaynak"] == "TMO"]
+tarih = "<GG-AA-YYYY>"
+ham_klasor = Path("ham-veri") / tarih
+
+haberler = json.load(open(ham_klasor / "haberler.json", encoding="utf-8"))
+
+def _sayfa_oku(ws, alanlar):
+    return [dict(zip(alanlar, row)) for row in ws.iter_rows(min_row=2, values_only=True)]
+
+wb = openpyxl.load_workbook(ham_klasor / "fiyatlar.xlsx")
+ozet_alanlari = ["kaynak", "urun", "birim", "tarih_onceki", "ort_fiyat_onceki",
+                  "tarih_son", "ort_fiyat_son", "degisim_yuzde", "anomali_ham"]
+fiyat = _sayfa_oku(wb["Fiyatlar (özet)"], ozet_alanlari)
+for r in fiyat:
+    r["anomali"] = r.pop("anomali_ham") == "EVET"
+turib_ozet = [r for r in fiyat if r["kaynak"].startswith("TURIB")]
+tmo_ozet = [r for r in fiyat if r["kaynak"] == "TMO"]
+
+il_ilce_alanlari = ["il", "ilce", "urun", "birim", "tarih_onceki", "ort_fiyat_onceki",
+                     "tarih_son", "ort_fiyat_son", "degisim_yuzde", "anomali_ham"]
+tmo_il_ilce = _sayfa_oku(wb["TMO İl-İlçe"], il_ilce_alanlari)
+for r in tmo_il_ilce:
+    r["anomali"] = r.pop("anomali_ham") == "EVET"
 
 paragraflar = { ... }  # adım 2
 
-html_metni = bulten_html_olustur(d["tarih"], "logo.png", paragraflar, turib_ozet, tmo_ozet, d["haberler"])
+html_metni = bulten_html_olustur(tarih, "logo.png", paragraflar, turib_ozet, tmo_ozet, haberler, tmo_il_ilce=tmo_il_ilce)
 # Nihai bülten ham-veri/'nin DIŞINDA, kendi tarihli klasöründe tutulur
-cikti_klasoru = Path(d["tarih"])
+cikti_klasoru = Path(tarih)
 cikti_klasoru.mkdir(exist_ok=True)
-pdf_yolu = cikti_klasoru / f"gunluk_gida_ozet_{d['tarih']}.pdf"
+pdf_yolu = cikti_klasoru / f"gunluk_gida_ozet_{tarih}.pdf"
 pdf_uret(html_metni, pdf_yolu, cikti_klasoru)
 print("PDF:", pdf_yolu)
 ```
+
+`bulten_html_olustur`'a verilen `tmo_il_ilce` parametresi, TMO Fiyatları
+bölümünün altına ürün bazlı özetin YANINA, il/ilçe kırılımında TÜM TMO
+fiyatlarını listeleyen ikinci bir tablo ekler (kullanıcı isteği: "il il ilçe
+ilçe ne varsa" tüm TMO fiyatları görünsün, sadece özet değil).
 
 `html_uret.py` playwright kullanıyor — chromium kurulu olmalı (gerekirse
 `playwright install chromium`). Bülten sırası: 1) Türkiye (Hububat/Genel +

@@ -48,9 +48,8 @@ h1 { font-family: inherit; font-weight: 700; margin: 0; }
   justify-content: space-between;
   border-bottom: 2px solid var(--wheat);
 }
-.header .brand { display: flex; align-items: center; gap: 14px; }
-.header .brand img { height: 52px; width: 52px; object-fit: contain; }
-.header .brand .name { font-size: 12pt; letter-spacing: 0.06em; color: var(--wheat); font-weight: 700; text-transform: uppercase; }
+.header .brand { display: flex; align-items: center; gap: 18px; }
+.header .brand img { height: 84px; width: 84px; object-fit: contain; }
 .header h1 { font-size: 22pt; margin-top: 2px; }
 .header .date-badge { font-size: 12pt; font-weight: 700; }
 .content { padding: 26px 40px 0 40px; }
@@ -122,7 +121,6 @@ table.pricetable td:not(:nth-child(2)), table.pricetable th { white-space: nowra
 .figure svg { width: 100%; height: auto; display: block; }
 .figure.dar svg { width: 72%; }
 .figcaption { font-size: 12pt; margin-top: 8px; line-height: 1.4; }
-.uyari { font-size: 12pt; color: var(--rust); font-style: italic; margin-top: 10px; }
 """
 
 
@@ -155,6 +153,27 @@ def _fiyat_tablosu_html(satirlar):
     return (
         '<table class="pricetable"><thead><tr>'
         "<th>Kaynak</th><th>Ürün</th><th>Önceki</th><th>Bugün</th><th>Değişim</th>"
+        "</tr></thead><tbody>" + "".join(satir_html) + "</tbody></table>"
+    )
+
+
+def _tmo_il_ilce_tablosu_html(satirlar):
+    if not satirlar:
+        return "<p>Veri alınamadı.</p>"
+    satir_html = []
+    for r in satirlar:
+        onceki = r["ort_fiyat_onceki"] if r["ort_fiyat_onceki"] is not None else "-"
+        yer = r["il"] or "-"
+        if r.get("ilce"):
+            yer += f" / {r['ilce']}"
+        satir_html.append(
+            f"<tr><td>{html.escape(yer)}</td><td>{html.escape(r['urun'])}</td>"
+            f"<td>{onceki}</td><td>{r['ort_fiyat_son']} {html.escape(r['birim'] or '')}</td>"
+            f"<td>{_pill(r['degisim_yuzde'])}</td></tr>"
+        )
+    return (
+        '<table class="pricetable"><thead><tr>'
+        "<th>İl / İlçe</th><th>Ürün</th><th>Önceki</th><th>Bugün</th><th>Değişim</th>"
         "</tr></thead><tbody>" + "".join(satir_html) + "</tbody></table>"
     )
 
@@ -211,15 +230,12 @@ def _kaynak_siteleri(haberler):
     return siteler + ["TÜRİB ve TMO (fiyat verileri)"]
 
 
-def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet, haberler):
+def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet, haberler, tmo_il_ilce=None):
     """paragraflar: {
         'global_hububat': [p1, p2], 'global_meyve_sebze': [p1, p2],
         'turkiye_hububat': [p1, p2], 'turkiye_meyve_sebze': [p1, p2],
     }"""
-    anomaliler = [r for r in (turib_ozet + tmo_ozet) if r.get("anomali")]
-    uyari_html = ""
-    if anomaliler:
-        uyari_html = f'<div class="uyari">[Not] {len(anomaliler)} üründe veri anomalisi tespit edildi, tablolara dahil edilmedi.</div>'
+    # Anomali satırları tablolardan sessizce çıkarılır; PDF'te not gösterilmez (kullanıcı isteği)
 
     kaynakca_items = "".join(f"<li>{html.escape(k)}</li>" for k in _kaynak_siteleri(haberler))
 
@@ -231,7 +247,7 @@ def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet,
   <div class="header">
     <div class="brand">
       {f'<img src="{logo_src}">' if logo_src else ''}
-      <div><div class="name">Sarıaslan Ticaret</div><h1>Günlük Özet</h1></div>
+      <h1>Günlük Özet</h1>
     </div>
     <div class="date-badge">{html.escape(tarih_str)}</div>
   </div>
@@ -270,16 +286,17 @@ def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet,
     <div class="section">
       <div class="eyebrow">Bölüm 3</div>
       <div class="section-title">TÜRİB Fiyatları</div>
-      {_sekil_html(turib_grafigi_svg(turib_ozet), 1, "Her ürün/endeks için kendi son iki işlem gününe göre ortalama fiyattaki yüzde değişim. Mavi düz çubuk artışı, turuncu taralı çubuk düşüşü gösterir. Tek gözlem karşılaştırması olduğundan hata çubuğu yoktur; değişimi hesaplanamayan ve anomali işaretli satırlar dışarıda bırakılmıştır.")}
+      {_sekil_html(turib_grafigi_svg(turib_ozet), 1, "Her ürün/endeks için kendi son iki işlem gününe göre ortalama fiyattaki yüzde değişim. Mavi düz çubuk artışı, turuncu taralı çubuk düşüşü gösterir. Tek gözlem karşılaştırması olduğundan hata çubuğu yoktur; değişimi hesaplanamayan satırlar gösterilmemiştir.")}
       {_fiyat_tablosu_html([r for r in turib_ozet if not r.get('anomali')])}
     </div>
 
     <div class="section">
       <div class="eyebrow">Bölüm 4</div>
       <div class="section-title">TMO Fiyatları</div>
-      {_sekil_html(tmo_grafigi_svg(tmo_ozet), 2, "TMO satış fiyatlarında (TL/ton) son iki yayın günü arasındaki yüzde değişim. Renk ve desen kodlaması Şekil 1 ile aynıdır; fiyatı 0 gelen ve anomali işaretli ürünler dahil edilmemiştir.", dar=True)}
+      {_sekil_html(tmo_grafigi_svg(tmo_ozet), 2, "TMO satış fiyatlarında (TL/ton) son iki yayın günü arasındaki yüzde değişim. Renk ve desen kodlaması Şekil 1 ile aynıdır; fiyatı 0 gelen ürünler gösterilmemiştir.", dar=True)}
       {_fiyat_tablosu_html([r for r in tmo_ozet if not r.get('anomali')])}
-      {uyari_html}
+      {f'<div class="subsection-title" style="margin-top:18px">İl / İlçe Bazında Tüm TMO Fiyatları</div>' if tmo_il_ilce else ''}
+      {_tmo_il_ilce_tablosu_html([r for r in (tmo_il_ilce or []) if not r.get('anomali')]) if tmo_il_ilce else ''}
     </div>
 
     <hr class="divider">
