@@ -144,6 +144,11 @@ hangi kaynaklarda sorun oldu, kaç ürün anomali olarak filtrelendi) bildir.
 
 ## Tasarım (zorunlu — değiştirilmeden kalmalı)
 
+**Herhangi bir tasarım değişikliği yapmadan/önermeden önce `tasarim.md`
+dosyasını oku ve oradaki checklist'i uygula.** Kullanıcı önceki bir
+denemenin "hâlâ çok vibecoding" durduğunu söyledi — bu dosya tam olarak
+bunu önlemek için yazıldı, atlama.
+
 Tasarım, Sarıaslan Ticaret web sitesinden (`yine-bi-agent/website/web/src/app/globals.css`)
 birebir alındı; kullanıcı ilk docx tasarımını ("çok kötü, profesyonel değil")
 reddedip bunu istedi. Token'lar zaten `html_uret.py`'nin CSS'ine gömülü:
