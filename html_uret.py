@@ -140,6 +140,11 @@ def _kaynak_adi(kod):
     return KAYNAK_ADLARI.get(kod, kod)
 
 
+def _sayi(x):
+    """18293.0 -> 18293 (gereksiz .0 yazılmaz)"""
+    return int(x) if isinstance(x, float) and x == int(x) else x
+
+
 def _fiyat_tablosu_html(satirlar):
     # Bugünkü fiyatı 0/boş gelen satırlar gösterilmez (kullanıcı isteği)
     # Sıfır fiyatlı, karşılaştırılamayan (önceki fiyatı 0/boş) ve hatalı satırlar hiç gösterilmez
@@ -151,7 +156,7 @@ def _fiyat_tablosu_html(satirlar):
         onceki = r["ort_fiyat_onceki"] if r["ort_fiyat_onceki"] else "-"
         satir_html.append(
             f"<tr><td>{html.escape(_kaynak_adi(r['kaynak']))}</td><td>{html.escape(r['urun'])}</td>"
-            f"<td>{onceki}</td><td>{r['ort_fiyat_son']} {html.escape(r['birim'] or '')}</td>"
+            f"<td>{_sayi(onceki)}</td><td>{_sayi(r['ort_fiyat_son'])} {html.escape(r['birim'] or '')}</td>"
             f"<td>{_pill(r['degisim_yuzde'])}</td></tr>"
         )
     return (
@@ -161,26 +166,39 @@ def _fiyat_tablosu_html(satirlar):
     )
 
 
-def _tmo_il_ilce_tablosu_html(satirlar):
-    # Bugünkü fiyatı 0/boş gelen satırlar gösterilmez (kullanıcı isteği)
-    # Sıfır fiyatlı, karşılaştırılamayan (önceki fiyatı 0/boş) ve hatalı satırlar hiç gösterilmez
-    satirlar = [r for r in satirlar if r.get("ort_fiyat_son") and r.get("degisim_yuzde") is not None and not r.get("anomali")]
+def _il_bazina_indir(satirlar):
+    """İl/ilçe satırlarını İL bazında birleştirir (kullanıcı isteği: ilçe değil il).
+    Sıfır fiyatlı, anomali işaretli ve önceki fiyatı doğrulanamayan satırlar
+    hiç girmez; il içinde önceki/bugün ortalaması aynı satırlardan alınır."""
+    gruplar = {}
+    for r in satirlar:
+        if r.get("anomali") or not (r.get("ort_fiyat_son") or 0) > 0 or not (r.get("ort_fiyat_onceki") or 0) > 0:
+            continue
+        gruplar.setdefault((r["il"] or "-", r["urun"], r["birim"]), []).append(r)
+    sonuc = []
+    for (il, urun, birim), satir in sorted(gruplar.items()):
+        son = sum(r["ort_fiyat_son"] for r in satir) / len(satir)
+        onceki = sum(r["ort_fiyat_onceki"] for r in satir) / len(satir)
+        sonuc.append({"il": il, "urun": urun, "birim": birim,
+                      "ort_fiyat_son": round(son, 2), "ort_fiyat_onceki": round(onceki, 2),
+                      "degisim_yuzde": round((son - onceki) / onceki * 100, 2)})
+    return sonuc
+
+
+def _tmo_il_tablosu_html(satirlar):
+    satirlar = _il_bazina_indir(satirlar)
     if not satirlar:
         return "<p>Veri alınamadı.</p>"
     satir_html = []
     for r in satirlar:
-        onceki = r["ort_fiyat_onceki"] if r["ort_fiyat_onceki"] else "-"
-        yer = r["il"] or "-"
-        if r.get("ilce"):
-            yer += f" / {r['ilce']}"
         satir_html.append(
-            f"<tr><td>{html.escape(yer)}</td><td>{html.escape(r['urun'])}</td>"
-            f"<td>{onceki}</td><td>{r['ort_fiyat_son']} {html.escape(r['birim'] or '')}</td>"
+            f"<tr><td>{html.escape(r['il'])}</td><td>{html.escape(r['urun'])}</td>"
+            f"<td>{_sayi(r['ort_fiyat_onceki'])}</td><td>{_sayi(r['ort_fiyat_son'])} {html.escape(r['birim'] or '')}</td>"
             f"<td>{_pill(r['degisim_yuzde'])}</td></tr>"
         )
     return (
         '<table class="pricetable"><thead><tr>'
-        "<th>İl / İlçe</th><th>Ürün</th><th>Önceki</th><th>Bugün</th><th>Değişim</th>"
+        "<th>İl</th><th>Ürün</th><th>Önceki</th><th>Bugün</th><th>Değişim</th>"
         "</tr></thead><tbody>" + "".join(satir_html) + "</tbody></table>"
     )
 
@@ -347,8 +365,8 @@ def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet,
       <div class="section-title">TMO Fiyatları</div>
       {_sekil_html(tmo_grafigi_svg(tmo_ozet), 2, "TMO satış fiyatlarında (TL/ton) son iki yayın günü arasındaki yüzde değişim. Renk ve desen kodlaması Şekil 1 ile aynıdır; fiyatı 0 gelen ürünler gösterilmemiştir.", dar=True)}
       {_fiyat_tablosu_html([r for r in tmo_ozet if not r.get('anomali')])}
-      {f'<div class="subsection-title" style="margin-top:18px">İl / İlçe Bazında Tüm TMO Fiyatları</div>' if tmo_il_ilce else ''}
-      {_tmo_il_ilce_tablosu_html([r for r in (tmo_il_ilce or []) if not r.get('anomali')]) if tmo_il_ilce else ''}
+      {f'<div class="subsection-title" style="margin-top:18px">İl Bazında Tüm TMO Fiyatları</div>' if tmo_il_ilce else ''}
+      {_tmo_il_tablosu_html(tmo_il_ilce) if tmo_il_ilce else ''}
     </div>
 
     <hr class="divider">
