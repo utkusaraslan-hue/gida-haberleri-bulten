@@ -39,10 +39,18 @@ gerektirmez, bu Claude Chat/Code oturumunun kendisi editörlük yapıyor.
 
 ## Akış
 
-### 1. Veri topla (mekanik, script)
+### 1. Veri topla (mekanik, script) — ÖNCE VAR MI DİYE BAK
+
+Bugünün tarihiyle bir `<GG-AA-YYYY>/veri.json` zaten varsa (ör. kullanıcı
+"bülteni hazırla" deyip aynı gün az önce de istemiş olabilir), o dosyayı
+DOĞRUDAN KULLAN — `veri_topla.py`'yi tekrar çalıştırma. Reddit + Browser Use
+adımları birkaç dakika sürüyor, veri zaten varsa bunu tekrarlamak gereksiz
+bekleme yaratır. Kullanıcı özellikle "yeniden çek/güncelle" derse o zaman
+tekrar çalıştır.
 
 ```bash
-cd gida-haberleri && python3 veri_topla.py
+cd gida-haberleri
+ls "$(date +%d-%m-%Y)/veri.json" 2>/dev/null && echo "VAR, tekrar çekme" || python3 veri_topla.py
 ```
 
 `<GG-AA-YYYY>/veri.json` üretir: `{"tarih", "haberler": [...], "fiyat": [...]}`.
