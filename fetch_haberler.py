@@ -214,6 +214,24 @@ def _browser_use_gorev_calistir(api_key, gorev):
     return sonuc.get("output") or sonuc.get("result") or ""
 
 
+def _gorevleri_calistir_ve_kayit_yap(api_key, gorevler):
+    """{kaynak_adi: gorev_metni} sözlüğündeki her görevi AYRI bir Browser Use
+    session'ı olarak sırayla çalıştırır, her biri için bir _kayit() döndürür.
+    Görevleri tek görevde birleştirmek 5 dakikalık polling penceresini aşıp
+    zaman aşımına uğruyordu (doğrulandı) — bu yüzden her kaynak kendi görevi."""
+    sonuclar = []
+    for kaynak_adi, gorev in gorevler.items():
+        try:
+            cikti = _browser_use_gorev_calistir(api_key, gorev)
+            if cikti is None:
+                print(f"[uyari] Browser Use görevi tamamlanamadı ({kaynak_adi})")
+                continue
+            sonuclar.append(_kayit(kaynak_adi, kaynak_adi, str(cikti)[:1500], "", ""))
+        except Exception as e:
+            print(f"[uyari] Browser Use adımı başarısız ({kaynak_adi}): {e}")
+    return sonuclar
+
+
 def fetch_linkedin_bloomberg_journalists(api_key):
     """Browser Use Cloud API ile bot-engelli platformlardaki (LinkedIn, Bloomberg HT)
     belirli isimlerin son paylaşımlarını çeker. api_key None ise atlanır."""
@@ -288,16 +306,53 @@ def fetch_kuresel_endeksler(api_key):
             "ve tarihini bul ve raporla."
         ),
     }
-    for kaynak_adi, gorev in gorevler.items():
-        try:
-            cikti = _browser_use_gorev_calistir(api_key, gorev)
-            if cikti is None:
-                print(f"[uyari] Browser Use görevi tamamlanamadı ({kaynak_adi})")
-                continue
-            sonuclar.append(_kayit(kaynak_adi, kaynak_adi, str(cikti)[:1500], "", ""))
-        except Exception as e:
-            print(f"[uyari] Browser Use adımı başarısız ({kaynak_adi}): {e}")
-    return sonuclar
+    return _gorevleri_calistir_ve_kayit_yap(api_key, gorevler)
+
+
+def fetch_borsa_futures_verileri(api_key):
+    """Browser Use Cloud API ile büyük emtia/vadeli işlem borsalarından güncel
+    fiyat verisi çeker (hepsi plain requests ile denendi, 403 ile engelliyor —
+    LME/CME/Bursa Malaysia doğrulandı, ICE ve DCE de aynı korumaya sahip).
+    Kullanıcı isteği: LME, Baltic Exchange, ICE Futures (US/Europe), CME,
+    DCE (Dalian), Bursa Malaysia Derivatives. api_key None ise atlanır."""
+    sonuclar = []
+    if not api_key:
+        print("[uyari] BROWSER_USE_API_KEY yok, borsa futures adımı atlanıyor")
+        return sonuclar
+
+    gorevler = {
+        "CME Buğday/Mısır/Soya Futures": (
+            "cmegroup.com üzerinden CBOT Buğday (Wheat/ZW), Mısır (Corn/ZC) ve Soya "
+            "Fasulyesi (Soybean/ZS) vadeli işlem sözleşmelerinin güncel/en yakın vade "
+            "fiyatlarını ve günlük değişimlerini bul ve raporla."
+        ),
+        "ICE Futures - Şeker/Kahve/Kakao/Pamuk": (
+            "theice.com (ICE Futures US ve Europe) üzerinden Şeker No.11 (Sugar), Kahve C "
+            "(Coffee), Kakao (Cocoa) ve Pamuk (Cotton No.2) vadeli işlem sözleşmelerinin "
+            "güncel fiyatlarını ve günlük değişimlerini bul ve raporla."
+        ),
+        "Dalian Ticaret Borsası (DCE) - Mısır/Soya/Palm Yağı": (
+            "Dalian Commodity Exchange (DCE, english.dce.com.cn) üzerinden Mısır (Corn), "
+            "Soya Fasulyesi (Soybean), Soya Küspesi (Soybean Meal) ve Palm Yağı (Palm Oil) "
+            "vadeli işlem sözleşmelerinin güncel fiyatlarını (CNY) bul ve raporla."
+        ),
+        "Bursa Malaysia - Ham Palm Yağı (FCPO)": (
+            "Bursa Malaysia Derivatives üzerinden Ham Palm Yağı (Crude Palm Oil/FCPO) "
+            "vadeli işlem sözleşmesinin güncel fiyatını (MYR/ton), günlük değişimini ve "
+            "tarihini bul ve raporla."
+        ),
+        "London Metal Exchange (LME)": (
+            "London Metal Exchange (lme.com) üzerinden temel metal fiyatlarını (Bakır/"
+            "Copper, Alüminyum/Aluminium, Çinko/Zinc gibi) - LME Reference Prices "
+            "sayfasından güncel değerleri ve günlük değişimleri bul ve raporla."
+        ),
+        "Baltic Exchange - Resmi Navlun Endeksleri": (
+            "balticexchange.com üzerinden resmi Baltic Dry Index, Baltic Capesize Index "
+            "(BCI), Baltic Panamax Index (BPI) ve Baltic Supramax Index (BSI) güncel "
+            "değerlerini (herkese açık kısımdan) bul ve raporla."
+        ),
+    }
+    return _gorevleri_calistir_ve_kayit_yap(api_key, gorevler)
 
 
 def tum_haberleri_topla(api_key=None):
@@ -308,6 +363,7 @@ def tum_haberleri_topla(api_key=None):
     haberler += fetch_reddit()
     haberler += fetch_linkedin_bloomberg_journalists(api_key)
     haberler += fetch_kuresel_endeksler(api_key)
+    haberler += fetch_borsa_futures_verileri(api_key)
     return haberler
 
 

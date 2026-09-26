@@ -30,11 +30,31 @@ gerektirmez, bu Claude Chat/Code oturumunun kendisi editörlük yapıyor.
   Yıldırım" YANLIŞ isim, kullanıcı bunu düzeltti — doğrusu Ali Ekber Yıldırım)
 - Browser Use Cloud API ile küresel endeksler (`fetch_kuresel_endeksler()`) —
   bunlar `requests` ile denendi, hepsi 403/login-gate ile engelliyor (Cloudflare
-  veya subscriber-only sayfa), bu yüzden Browser Use şart:
+  veya subscriber-only sayfa), bu yüzden Browser Use şart. HER KAYNAK AYRI
+  görev olarak gönderilir (bkz. aşağıdaki "Browser Use görev sayısı" notu):
   - FAO Gıda Fiyat Endeksi, IGC Tahıl ve Yağlı Tohum Endeksi (GOI), USDA WASDE
-    son rapor öne çıkanları (tek Browser Use görevinde birleştirildi)
+    son rapor öne çıkanları
   - Navlun endeksleri: Baltic Dry Index, Baltic Panamax Index, Black Sea Wheat
-    Index/WHFOB (investing.com, tek Browser Use görevinde birleştirildi)
+    Index/WHFOB (investing.com)
+- Browser Use Cloud API ile büyük emtia/vadeli işlem borsaları
+  (`fetch_borsa_futures_verileri()`) — kullanıcı isteğiyle eklendi, aynı
+  şekilde plain requests 403 ile engelliyor:
+  - CME (CBOT Buğday/Mısır/Soya futures), ICE Futures US/Europe (Şeker/Kahve/
+    Kakao/Pamuk), Dalian Ticaret Borsası/DCE (Mısır/Soya/Soya Küspesi/Palm
+    Yağı, Çin referans fiyatları), Bursa Malaysia Derivatives (Ham Palm Yağı/
+    FCPO — küresel yenilebilir yağ fiyatlarında kritik), London Metal Exchange
+    (temel metal fiyatları — gıda dışı ama genel emtia bağlamı için),
+    Baltic Exchange (resmi navlun endeksleri, investing.com'daki yansımasının
+    tamamlayıcısı)
+
+**Browser Use görev sayısı**: toplamda artık 2 (gazeteci) + 6 (küresel
+endeks) + 6 (borsa futures) = 14 ayrı Browser Use session'ı çalışıyor, hepsi
+SIRAYLA (paralel değil). Her biri tipik olarak 45sn-2dk sürüyor ama bazıları
+(DCE gibi Çince/karmaşık sayfalar) daha uzun sürebilir — toplam veri toplama
+adımı 15-25 dakikaya çıkabilir. Bu normaldir, kesme; `run_in_background` ile
+çalıştır. Görevleri TEK GÖREVDE BİRLEŞTİRME — denendi, agent 5 dakikalık
+polling penceresini aşıp zaman aşımına uğruyor (bkz. `_browser_use_gorev_calistir`
+docstring'i).
 
 **Fiyat verisi** (`tmo_ozet.py`, `fiyat_ozeti_getir()`):
 - `github.com/utkusaraslan-hue/generalgrainrepo` reposundaki
@@ -81,9 +101,10 @@ ls "ham-veri/$(date +%d-%m-%Y)/tarih.json" 2>/dev/null && echo "VAR, tekrar çek
 - `tarih.json`: `{"tarih": "GG-AA-YYYY"}` — sadece "bu klasör bugüne mi ait"
   kontrolü için
 
-Reddit + Browser Use (artık 4 ayrı görev: 2 gazeteci + endeksler + navlun)
-nedeniyle toplam 10-15 dakikaya kadar sürebilir, sabırlı ol — uzun sürüyor
-diye kesme, `run_in_background` ile çalıştırıp bekleyebilirsin.
+Reddit + Browser Use (artık 14 ayrı görev: 2 gazeteci + 6 küresel endeks +
+6 borsa futures, hepsi sırayla) nedeniyle toplam 15-25 dakikaya kadar
+sürebilir, sabırlı ol — uzun sürüyor diye kesme, `run_in_background` ile
+çalıştırıp bekleyebilirsin.
 
 ### 2. Paragrafları SEN yaz (editoryal — bu asıl senin işin)
 
@@ -93,17 +114,20 @@ başlıkları madde madde sıralama, gerçek bağlam kurarak sentezle.
 
 Kategoriler (kaynak ülkesi × ürün tipi, 2 boyutlu ayrım):
 - `global_hububat`: Global kaynaklı (FBN, Reddit, FAO/IGC/USDA endeksleri,
-  Baltic Dry/Panamax/Black Sea Wheat navlun endeksleri) hububat/tahıl/genel gıda
+  Baltic Dry/Panamax/Black Sea Wheat navlun endeksleri, CME/ICE/DCE/Bursa
+  Malaysia/LME borsa futures verileri) hububat/tahıl/genel gıda
 - `global_meyve_sebze`: Global kaynaklı meyve-sebze
 - `turkiye_hububat`: Türkiye kaynaklı (Dünya Gazetesi, Tarım Dünyası, Karasaban,
   Tarımdan Haber, İrfan Donat/Ali Ekber Yıldırım) hububat/tahıl/genel tarım-gıda
 - `turkiye_meyve_sebze`: Türkiye kaynaklı meyve-sebze
 
-FAO/IGC/USDA endeksleri ve navlun endeksleri (Baltic Dry/Panamax, Black Sea
-Wheat) haber değil ham veri niteliğinde — paragraf yazarken bunları rakamsal
-bağlam/gerekçe olarak kullan (ör. "navlun endekslerindeki yükseliş X'i
-etkiliyor"), ayrı bir "endeksler" bölümü açma; kaynak adını (site adı, ör.
-"FAO", "IGC", "Baltic Exchange/investing.com") metinde geçirmek serbest, bu
+FAO/IGC/USDA endeksleri, navlun endeksleri (Baltic Dry/Panamax, Black Sea
+Wheat, Baltic Exchange) ve borsa futures verileri (CME, ICE, DCE, Bursa
+Malaysia, LME) haber değil ham veri niteliğinde — paragraf yazarken bunları
+rakamsal bağlam/gerekçe olarak kullan (ör. "navlun endekslerindeki yükseliş
+X'i etkiliyor", "CBOT buğday vadelilerindeki hareket Y'ye işaret ediyor"),
+ayrı bir "endeksler" bölümü açma; kaynak adını (borsa/site adı, ör. "FAO",
+"IGC", "CME", "Baltic Exchange/investing.com") metinde geçirmek serbest, bu
 gazeteci-ismi-gizleme kuralının kapsamı dışında.
 
 Kurallar:
