@@ -18,12 +18,23 @@ gerektirmez, bu Claude Chat/Code oturumunun kendisi editörlük yapıyor.
 
 **Haberler** (`fetch_haberler.py`, `tum_haberleri_topla()`):
 - Dünya Gazetesi Tarım sayfası (scrape, RSS yok)
+- Türkçe tarım/gıda siteleri RSS: Tarım Dünyası (Ali Ekber Yıldırım'ın kendi
+  sitesi), Karasaban (Necdet Oral gibi eleştirel tarım ekonomisi yazarları),
+  Tarımdan Haber — isim bazlı Browser Use taraması yerine site RSS'i tercih
+  edildi (daha az kırılgan, isim yanlış yazma riski yok)
 - Food Business News RSS feed'leri (Genel, Tahıl, Tedarik Zinciri, Meyve/Sebze)
 - Reddit (r/FoodNews, r/agriculture, r/farming) — sıkı rate-limit var, istekler
   arasında bilinçli bekleme var, bazen 429 ile bir/iki kaynak atlanabilir, sorun değil
 - Browser Use Cloud API ile LinkedIn/Bloomberg HT'den iki gazetecinin son
   paylaşımları: **İrfan Donat** ve **Ali Ekber Yıldırım** (dikkat: "Elif Ekber
   Yıldırım" YANLIŞ isim, kullanıcı bunu düzeltti — doğrusu Ali Ekber Yıldırım)
+- Browser Use Cloud API ile küresel endeksler (`fetch_kuresel_endeksler()`) —
+  bunlar `requests` ile denendi, hepsi 403/login-gate ile engelliyor (Cloudflare
+  veya subscriber-only sayfa), bu yüzden Browser Use şart:
+  - FAO Gıda Fiyat Endeksi, IGC Tahıl ve Yağlı Tohum Endeksi (GOI), USDA WASDE
+    son rapor öne çıkanları (tek Browser Use görevinde birleştirildi)
+  - Navlun endeksleri: Baltic Dry Index, Baltic Panamax Index, Black Sea Wheat
+    Index/WHFOB (investing.com, tek Browser Use görevinde birleştirildi)
 
 **Fiyat verisi** (`tmo_ozet.py`, `fiyat_ozeti_getir()`):
 - `github.com/utkusaraslan-hue/generalgrainrepo` reposundaki
@@ -70,8 +81,9 @@ ls "ham-veri/$(date +%d-%m-%Y)/tarih.json" 2>/dev/null && echo "VAR, tekrar çek
 - `tarih.json`: `{"tarih": "GG-AA-YYYY"}` — sadece "bu klasör bugüne mi ait"
   kontrolü için
 
-Reddit + Browser Use nedeniyle toplam birkaç dakika sürebilir, sabırlı ol —
-uzun sürüyor diye kesme, `run_in_background` ile çalıştırıp bekleyebilirsin.
+Reddit + Browser Use (artık 4 ayrı görev: 2 gazeteci + endeksler + navlun)
+nedeniyle toplam 10-15 dakikaya kadar sürebilir, sabırlı ol — uzun sürüyor
+diye kesme, `run_in_background` ile çalıştırıp bekleyebilirsin.
 
 ### 2. Paragrafları SEN yaz (editoryal — bu asıl senin işin)
 
@@ -80,11 +92,19 @@ paragraf** akıcı Türkçe düz yazı yaz. Bu bir haber bülteni editörlüğü
 başlıkları madde madde sıralama, gerçek bağlam kurarak sentezle.
 
 Kategoriler (kaynak ülkesi × ürün tipi, 2 boyutlu ayrım):
-- `global_hububat`: Global kaynaklı (FBN, Reddit) hububat/tahıl/genel gıda
+- `global_hububat`: Global kaynaklı (FBN, Reddit, FAO/IGC/USDA endeksleri,
+  Baltic Dry/Panamax/Black Sea Wheat navlun endeksleri) hububat/tahıl/genel gıda
 - `global_meyve_sebze`: Global kaynaklı meyve-sebze
-- `turkiye_hububat`: Türkiye kaynaklı (Dünya Gazetesi, İrfan Donat/Ali Ekber
-  Yıldırım) hububat/tahıl/genel tarım-gıda
+- `turkiye_hububat`: Türkiye kaynaklı (Dünya Gazetesi, Tarım Dünyası, Karasaban,
+  Tarımdan Haber, İrfan Donat/Ali Ekber Yıldırım) hububat/tahıl/genel tarım-gıda
 - `turkiye_meyve_sebze`: Türkiye kaynaklı meyve-sebze
+
+FAO/IGC/USDA endeksleri ve navlun endeksleri (Baltic Dry/Panamax, Black Sea
+Wheat) haber değil ham veri niteliğinde — paragraf yazarken bunları rakamsal
+bağlam/gerekçe olarak kullan (ör. "navlun endekslerindeki yükseliş X'i
+etkiliyor"), ayrı bir "endeksler" bölümü açma; kaynak adını (site adı, ör.
+"FAO", "IGC", "Baltic Exchange/investing.com") metinde geçirmek serbest, bu
+gazeteci-ismi-gizleme kuralının kapsamı dışında.
 
 Kurallar:
 - Sadece `veri.json`'daki gerçek haberlerden bilgi kullan, rakam/olay uydurma.

@@ -22,6 +22,15 @@ FBN_FEEDS = {
     "Food Business News - Meyve/Sebze": "https://www.foodbusinessnews.net/rss/topic/124-produce",
 }
 
+# Türkiye tarım/gıda basınından ek RSS kaynakları — Ali Ekber Yıldırım (Tarım Dünyası),
+# Necdet Oral gibi tarım ekonomisi yazarlarının köşe yazılarını da bu siteler taşıyor,
+# bu yüzden isim bazlı Browser Use taraması yerine (daha kırılgan) site RSS'i tercih edildi.
+TR_TARIM_FEEDS = {
+    "Tarım Dünyası": "https://www.tarimdunyasi.net/feed/",
+    "Karasaban": "https://www.karasaban.net/feed/",
+    "Tarımdan Haber": "https://www.tarimdanhaber.com/rss",
+}
+
 REDDIT_SUBS = ["FoodNews", "agriculture", "farming"]
 
 MEYVE_SEBZE_ANAHTAR_KELIMELER = [
@@ -117,6 +126,34 @@ def fetch_food_business_news(gun_sayisi=2):
     return sonuclar
 
 
+def fetch_tr_tarim_siteleri(gun_sayisi=3):
+    """Ali Ekber Yıldırım (Tarım Dünyası), Necdet Oral (Karasaban) gibi tarım
+    ekonomisi yazarlarının köşe yazılarını da içeren Türkçe tarım/gıda haber
+    sitelerinden RSS ile toplar."""
+    sonuclar = []
+    esik = datetime.now(timezone.utc) - timedelta(days=gun_sayisi)
+    for ad, url in TR_TARIM_FEEDS.items():
+        try:
+            r = requests.get(url, headers=HEADERS, timeout=20)
+            r.raise_for_status()
+            d = feedparser.parse(r.content)
+            for e in d.entries:
+                tarih_str = e.get("published", "")
+                dahil_et = True
+                if getattr(e, "published_parsed", None):
+                    tarih = datetime(*e.published_parsed[:6], tzinfo=timezone.utc)
+                    dahil_et = tarih >= esik
+                if dahil_et:
+                    gorsel = next(
+                        (l["href"] for l in e.get("links", []) if l.get("rel") == "enclosure" and "image" in l.get("type", "")),
+                        None,
+                    )
+                    sonuclar.append(_kayit(ad, e.title, e.get("summary", "")[:300], e.link, tarih_str, gorsel_url=gorsel))
+        except Exception as e:
+            print(f"[uyari] {ad} feed'i çekilemedi: {e}")
+    return sonuclar
+
+
 def fetch_reddit(gun_sayisi=2, bekleme_sn=25):
     """Reddit sıkı rate-limit uyguluyor; istekler arasında bilinçli bekleme var."""
     sonuclar = []
@@ -144,6 +181,39 @@ def fetch_reddit(gun_sayisi=2, bekleme_sn=25):
     return sonuclar
 
 
+def _browser_use_gorev_calistir(api_key, gorev):
+    """Tek bir Browser Use Cloud API görevini çalıştırıp metin çıktısını döndürür.
+    Görev tamamlanamazsa None döner (çağıran taraf try/except ile ele alır)."""
+    headers = {"X-Browser-Use-API-Key": api_key, "Content-Type": "application/json"}
+    resp = requests.post(
+        "https://api.browser-use.com/api/v3/sessions",
+        headers=headers,
+        json={"task": gorev},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    session_id = resp.json().get("id") or resp.json().get("session_id")
+    if not session_id:
+        return None
+
+    sonuc = None
+    for _ in range(30):
+        time.sleep(15)
+        durum = requests.get(
+            f"https://api.browser-use.com/api/v3/sessions/{session_id}",
+            headers=headers,
+            timeout=20,
+        )
+        durum.raise_for_status()
+        veri = durum.json()
+        if veri.get("status") in ("finished", "completed", "stopped", "failed"):
+            sonuc = veri
+            break
+    if not sonuc or sonuc.get("status") == "failed":
+        return None
+    return sonuc.get("output") or sonuc.get("result") or ""
+
+
 def fetch_linkedin_bloomberg_journalists(api_key):
     """Browser Use Cloud API ile bot-engelli platformlardaki (LinkedIn, Bloomberg HT)
     belirli isimlerin son paylaşımlarını çeker. api_key None ise atlanır."""
@@ -153,7 +223,6 @@ def fetch_linkedin_bloomberg_journalists(api_key):
         return sonuclar
 
     kisiler = ["İrfan Donat", "Ali Ekber Yıldırım"]
-    headers = {"X-Browser-Use-API-Key": api_key, "Content-Type": "application/json"}
     for kisi in kisiler:
         try:
             gorev = (
@@ -162,48 +231,83 @@ def fetch_linkedin_bloomberg_journalists(api_key):
                 f"başlık/özet ve varsa link ver. JSON listesi olarak döndür: "
                 f"[{{\"baslik\": ..., \"ozet\": ..., \"link\": ...}}]"
             )
-            resp = requests.post(
-                "https://api.browser-use.com/api/v3/sessions",
-                headers=headers,
-                json={"task": gorev},
-                timeout=30,
-            )
-            resp.raise_for_status()
-            session_id = resp.json().get("id") or resp.json().get("session_id")
-            if not session_id:
-                print(f"[uyari] Browser Use session id alınamadı ({kisi})")
-                continue
-
-            sonuc = None
-            for _ in range(20):
-                time.sleep(15)
-                durum = requests.get(
-                    f"https://api.browser-use.com/api/v3/sessions/{session_id}",
-                    headers=headers,
-                    timeout=20,
-                )
-                durum.raise_for_status()
-                veri = durum.json()
-                if veri.get("status") in ("finished", "completed", "stopped", "failed"):
-                    sonuc = veri
-                    break
-            if not sonuc or sonuc.get("status") == "failed":
+            cikti = _browser_use_gorev_calistir(api_key, gorev)
+            if cikti is None:
                 print(f"[uyari] Browser Use görevi tamamlanamadı ({kisi})")
                 continue
-
-            cikti = sonuc.get("output") or sonuc.get("result") or ""
             sonuclar.append(_kayit(f"LinkedIn/Bloomberg - {kisi}", f"{kisi} son paylaşımlar", str(cikti)[:1500], "", ""))
         except Exception as e:
             print(f"[uyari] Browser Use adımı başarısız ({kisi}): {e}")
     return sonuclar
 
 
+def fetch_kuresel_endeksler(api_key):
+    """Browser Use Cloud API ile, plain requests'in Cloudflare/login engeline takıldığı
+    (doğrudan denendi, 403/login-gate doğrulandı) küresel tahıl/navlun endekslerini çeker:
+    FAO Gıda Fiyat Endeksi, IGC Tahıl ve Yağlı Tohum Endeksi (GOI), USDA WASDE son rapor
+    öne çıkanları, ve navlun endeksleri (Baltic Dry, Baltic Panamax, Black Sea Wheat Index).
+
+    Her kaynak AYRI bir Browser Use görevi olarak gönderilir — 3 siteyi tek görevde
+    birleştirmek denendi, agent 5 dakikalık polling penceremizi aşıp zaman aşımına
+    uğradı (görev teknik olarak devam ediyordu ama biz "tamamlanamadı" diye pes ettik).
+    Tek-kaynaklı görevler tipik olarak ~45 saniyede bitiyor (doğrulandı: Baltic Dry
+    Index testi 3 poll'de, "stopped" status ile, output dolu döndü).
+
+    api_key None ise atlanır."""
+    sonuclar = []
+    if not api_key:
+        print("[uyari] BROWSER_USE_API_KEY yok, küresel endeks adımı atlanıyor")
+        return sonuclar
+
+    gorevler = {
+        "FAO Gıda Fiyat Endeksi": (
+            "fao.org/worldfoodsituation/foodpricesindex sayfasından FAO Gıda Fiyat "
+            "Endeksi'nin son ay değerini ve bir önceki aya göre değişimini bul ve raporla."
+        ),
+        "IGC Tahıl ve Yağlı Tohum Endeksi (GOI)": (
+            "igc.int üzerindeki herkese açık/özet sayfasından IGC (International Grains "
+            "Council) Grains and Oilseeds Index (GOI) son değerini ve haftalık/aylık "
+            "değişimini bul ve raporla. Alt endeksler (buğday, mısır, pirinç, soya) varsa "
+            "onları da ekle."
+        ),
+        "USDA WASDE Son Rapor": (
+            "fas.usda.gov/data/wasde sayfasından en son WASDE raporunun buğday/mısır/soya "
+            "için öne çıkan üretim/stok/fiyat tahminlerini bul ve özetle."
+        ),
+        "Baltic Dry Index": (
+            "investing.com/indices/baltic-dry sayfasından Baltic Dry Index güncel değerini, "
+            "günlük değişimini ve tarihini bul ve raporla."
+        ),
+        "Baltic Panamax Index": (
+            "investing.com/indices/baltic-panamax sayfasından Baltic Panamax Index güncel "
+            "değerini, günlük değişimini ve tarihini bul ve raporla."
+        ),
+        "Black Sea Wheat Index": (
+            "investing.com/indices/wheat-fob-black-sea-index sayfasından Wheat Index FOB "
+            "Black Sea region (Black Sea Wheat Index) güncel değerini, günlük değişimini "
+            "ve tarihini bul ve raporla."
+        ),
+    }
+    for kaynak_adi, gorev in gorevler.items():
+        try:
+            cikti = _browser_use_gorev_calistir(api_key, gorev)
+            if cikti is None:
+                print(f"[uyari] Browser Use görevi tamamlanamadı ({kaynak_adi})")
+                continue
+            sonuclar.append(_kayit(kaynak_adi, kaynak_adi, str(cikti)[:1500], "", ""))
+        except Exception as e:
+            print(f"[uyari] Browser Use adımı başarısız ({kaynak_adi}): {e}")
+    return sonuclar
+
+
 def tum_haberleri_topla(api_key=None):
     haberler = []
     haberler += fetch_dunya_tarim()
+    haberler += fetch_tr_tarim_siteleri()
     haberler += fetch_food_business_news()
     haberler += fetch_reddit()
     haberler += fetch_linkedin_bloomberg_journalists(api_key)
+    haberler += fetch_kuresel_endeksler(api_key)
     return haberler
 
 
