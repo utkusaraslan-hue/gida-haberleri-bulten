@@ -94,8 +94,8 @@ def turib_grafigi_svg(turib_ozet):
     urunler = _gecerli([r for r in turib_ozet if r["kaynak"] != "TURIB_ENDEKS"])
     endeksler = _gecerli([r for r in turib_ozet if r["kaynak"] == "TURIB_ENDEKS"])
     paneller = [(p, h, b) for p, h, b in (
-        (urunler, "A", f"Normal seans, ürün bazında (n = {len(urunler)})"),
-        (endeksler, "B", f"TÜRİB endeksleri (n = {len(endeksler)})"),
+        (urunler, "A", f"Normal seans, ürün bazında ({len(urunler)} ürün)"),
+        (endeksler, "B", f"TÜRİB endeksleri ({len(endeksler)} endeks)"),
     ) if p]
     if not paneller:
         return None
@@ -118,5 +118,5 @@ def tmo_grafigi_svg(tmo_ozet):
         return None
     with plt.rc_context(STIL):
         fig, ax = plt.subplots(figsize=(5.4, 0.3 * len(satirlar) + 1.1))
-        _panel(ax, satirlar, baslik=f"TMO satış fiyatları (n = {len(satirlar)})")
+        _panel(ax, satirlar, baslik=f"TMO satış fiyatları ({len(satirlar)} ürün)")
         return _svg(fig)

@@ -210,7 +210,7 @@ def _sekil_html(svg, no, aciklama, dar=False):
     if not svg:
         return ""
     return (f'<div class="figure{' dar' if dar else ''}">{svg}'
-            f'<div class="figcaption"><b>Şekil {no}.</b> {aciklama}</div></div>')
+            '</div>')  # Şekil açıklama metni gösterilmez (kullanıcı isteği)
 
 
 def _kaynak_siteleri(haberler):
