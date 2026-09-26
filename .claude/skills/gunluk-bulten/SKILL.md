@@ -88,7 +88,14 @@ Kategoriler (kaynak ülkesi × ürün tipi, 2 boyutlu ayrım):
 
 Kurallar:
 - Sadece `veri.json`'daki gerçek haberlerden bilgi kullan, rakam/olay uydurma.
-- İngilizce haberleri (FBN, Reddit) Türkçeye çevirip sentezle, kaynağı belirt.
+- İngilizce haberleri (FBN, Reddit) Türkçeye çevirip sentezle.
+- **Reddit adını metinde ASLA geçirme** (r/farming, r/FoodNews vb. de yok):
+  "yurt dışında konuşulan", "yabancı sosyal medyada dönen", "yurt dışı tarım
+  çevrelerinde tartışılan" gibi ifadeler kullan (kullanıcı isteği).
+- **Gazetecileri isimle anma** (İrfan Donat, Ali Ekber Yıldırım vb.):
+  "tarım gazetecileri", "sektörü takip eden gazeteciler" de.
+- Site/yayın adı vermek serbest (Dünya Gazetesi, Bloomberg HT, Food Business
+  News, CBC News gibi).
 - Bir kategoride haber azsa/yoksa dürüstçe belirt (fabrikasyon yapma);
   gerekirse ilgili genel gıda fiyat/politika haberine köprü kurarak bağla.
 - Bölüm sırası önemli: raporda önce **Türkiye**, sonra **Global Piyasa** gelir
@@ -133,7 +140,9 @@ print("PDF:", pdf_yolu)
 `html_uret.py` playwright kullanıyor — chromium kurulu olmalı (gerekirse
 `playwright install chromium`). Bülten sırası: 1) Türkiye (Hububat/Genel +
 Meyve-Sebze alt bölümleri), 2) Global Piyasa (aynı alt bölümler), 3) TÜRİB
-Fiyatları (tablo), 4) TMO Fiyatları (tablo), 5) Kaynakça + credit.
+Fiyatları (grafik + tablo), 4) TMO Fiyatları (grafik + tablo), 5) Kaynakça
+(sadece site adları, link/başlık yok; Reddit "Yurt dışı sosyal medya ve sektör
+forumları" olarak geçer). Alt bilgi (GitHub linki, "Hazırlayan") YOK.
 
 ### 4. Doğrula ve raporla
 
@@ -142,28 +151,29 @@ Fiyatları (tablo), 4) TMO Fiyatları (tablo), 5) Kaynakça + credit.
 gör). Kullanıcıya PDF yolunu ve kısa özet (kaç haber, TÜRİB/TMO satır sayısı,
 hangi kaynaklarda sorun oldu, kaç ürün anomali olarak filtrelendi) bildir.
 
-## Tasarım (zorunlu — değiştirilmeden kalmalı)
+## Tasarım
 
 **Herhangi bir tasarım değişikliği yapmadan/önermeden önce `tasarim.md`
 dosyasını oku ve oradaki checklist'i uygula.** Kullanıcı önceki bir
 denemenin "hâlâ çok vibecoding" durduğunu söyledi — bu dosya tam olarak
 bunu önlemek için yazıldı, atlama.
 
-Tasarım, Sarıaslan Ticaret web sitesinden (`yine-bi-agent/website/web/src/app/globals.css`)
-birebir alındı; kullanıcı ilk docx tasarımını ("çok kötü, profesyonel değil")
-reddedip bunu istedi. Token'lar zaten `html_uret.py`'nin CSS'ine gömülü:
+Güncel tasarım (26-09-2026'da kullanıcı isteğiyle değişti, `html_uret.py`
+CSS'inde ve `grafik_uret.py` stilinde gömülü):
 
-- Renkler: ink `#1a1512`, paper `#f6f5f1`, silo (koyu header) `#171410`,
-  wheat (altın vurgu) `#c9a339`/`#e4c869`, moss (yeşil/artış) `#33654a`,
-  rust (kırmızı/düşüş) `#9b3a2c`
-- Font: başlıklar Oswald (büyük harf, kalın), gövde Verdana — **Times New
-  Roman DEĞİL**, o eski docx sürümünde kalan bir tercihti, artık geçerli değil
-- Keskin köşe, gölge yok, ince (1px) çizgiler — Tailwind'in `border-line`
-  hairline stiline uygun
-- Logo: `logo.png` (Sarıaslan Ticaret arması), header'ın sol üstünde
-- Fiyat değişim renkleri renk-körü dostu turuncu/mavi (Okabe-Ito paleti,
-  `#D55E00`/`#0072B2`) — HTML'de pill/badge olarak moss/rust kullanılıyor,
-  eğer ek bir grafik eklenirse (matplotlib) kırmızı/yeşil DEĞİL bu paleti kullan
+- Başlık: "Günlük Özet" (eski "Günlük Gıda & Tarım Bülteni" DEĞİL), üstünde
+  küçük "Sarıaslan Ticaret", solda `logo.png`, sağ üstte çerçevesiz tarih
+- Siyah banner YOK: header ve tablo başlıkları beyaz zemin + koyu yazı,
+  ince siyah/buğday (`#c9a339`) çizgilerle ayrılır
+- Font: **Times New Roman, tüm yazılar 12 pt** (gövde, tablo, kart, grafik,
+  açıklama, kaynakça); yalnızca başlık hiyerarşisi büyük (sayfa başlığı 22,
+  bölüm 18, alt bölüm 14 pt). Oswald/Verdana artık kullanılmıyor
+- Üstteki KPI kartlarında ürün adı tam görünür (kesilmez, satır kayar),
+  kaynak kodu okunur adla yazılır (TURIB_NORMAL_SEANS → TÜRİB)
+- Keskin köşe, gölge yok, ince (1px) çizgiler
+- Fiyat değişim renkleri renk-körü dostu Okabe-Ito: artış mavi `#0072B2`,
+  düşüş turuncu (grafikte taralı); kırmızı/yeşil KULLANMA. Grafikler
+  scientific-visualization skill'i ilkeleriyle (`grafik_uret.py`)
 
 ## Bilinen kısıtlar / denenip vazgeçilenler
 

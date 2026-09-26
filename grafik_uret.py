@@ -2,7 +2,7 @@
 skill'i ilkeleri): Okabe-Ito renk-körü dostu palet (artış mavi #0072B2,
 düşüş turuncu #D55E00 + gri tonlamada okunsun diye tarama deseni), sıfır
 referans çizgisi, üst/sağ çerçeve yok, birimli eksen etiketi, sans-serif
-(Verdana) 7-9 pt yazı. Çıktı vektörel SVG metnidir; HTML'e doğrudan gömülür."""
+Times New Roman 12 pt yazı (bültenin gövde metniyle aynı). Çıktı vektörel SVG metnidir; HTML'e doğrudan gömülür."""
 import io
 
 import matplotlib
@@ -15,12 +15,12 @@ DUSUS = "#D55E00"
 INK = "#1a1512"
 
 STIL = {
-    "font.family": "sans-serif",
-    "font.sans-serif": ["Verdana", "DejaVu Sans"],
-    "font.size": 8,
-    "axes.labelsize": 8.5,
-    "xtick.labelsize": 7.5,
-    "ytick.labelsize": 7.5,
+    "font.family": "serif",
+    "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
+    "font.size": 12,
+    "axes.labelsize": 12,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12,
     "axes.linewidth": 0.5,
     "axes.edgecolor": INK,
     "axes.labelcolor": INK,
@@ -63,12 +63,12 @@ def _panel(ax, satirlar, harf=None, baslik=None, sinir=None):
     for i, v in enumerate(degerler):
         isaret = "+" if v > 0 else ""
         ax.text(v + (sinir * 0.02 if v >= 0 else -sinir * 0.02), i, f"{isaret}{v:.2f}",
-                va="center", ha="left" if v >= 0 else "right", fontsize=7, color=INK)
+                va="center", ha="left" if v >= 0 else "right", fontsize=12, color=INK)
 
     if baslik:
-        ax.set_title(baslik, fontsize=8.5, loc="left", color=INK, pad=6)
+        ax.set_title(baslik, fontsize=12, loc="left", color=INK, pad=6)
     if harf:
-        ax.text(-0.02, 1.02, harf, transform=ax.transAxes, fontsize=10,
+        ax.text(-0.02, 1.02, harf, transform=ax.transAxes, fontsize=13,
                 fontweight="bold", va="bottom", ha="right", color=INK)
 
 
@@ -100,13 +100,14 @@ def turib_grafigi_svg(turib_ozet):
     if not paneller:
         return None
     with plt.rc_context(STIL):
-        oranlar = [max(len(p), 3) for p, _, _ in paneller]
+        # 12 pt etiketler yan yana sığmadığı için paneller alt alta dizilir
+        oranlar = [len(p) for p, _, _ in paneller]
         fig, eksenler = plt.subplots(
-            1, len(paneller), figsize=(7.2, 0.2 * max(oranlar) + 0.9),
-            gridspec_kw={"wspace": 0.9}, squeeze=False)
+            len(paneller), 1, figsize=(7.2, 0.3 * sum(oranlar) + 0.9 * len(paneller)),
+            gridspec_kw={"height_ratios": oranlar, "hspace": 0.35}, squeeze=False)
         # Paneller aynı x ölçeğini paylaşır ki değişimler doğrudan karşılaştırılabilsin
         ortak = _sinir([r["degisim_yuzde"] for p, _, _ in paneller for r in p])
-        for ax, (p, h, b) in zip(eksenler[0], paneller):
+        for ax, (p, h, b) in zip(eksenler[:, 0], paneller):
             _panel(ax, p, harf=h if len(paneller) > 1 else None, baslik=b, sinir=ortak)
         return _svg(fig)
 
@@ -116,6 +117,6 @@ def tmo_grafigi_svg(tmo_ozet):
     if not satirlar:
         return None
     with plt.rc_context(STIL):
-        fig, ax = plt.subplots(figsize=(4.6, 0.24 * len(satirlar) + 0.8))
+        fig, ax = plt.subplots(figsize=(5.4, 0.3 * len(satirlar) + 1.1))
         _panel(ax, satirlar, baslik=f"TMO satış fiyatları (n = {len(satirlar)})")
         return _svg(fig)

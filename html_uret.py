@@ -1,6 +1,6 @@
-"""Sarıaslan Ticaret web sitesinin tasarım dilini (paper/ink/wheat/moss/rust,
-Oswald başlık + Verdana gövde, keskin köşe, gölgesiz ince çizgiler) kullanan
-PDF günlük bülten üretici. Playwright ile HTML -> PDF render edilir.
+"""Sarıaslan Ticaret günlük özet PDF üretici: beyaz zemin, Times New Roman 12 pt,
+buğday rengi vurgu, keskin köşe, gölgesiz ince çizgiler.
+Playwright ile HTML -> PDF render edilir.
 
 İçerik akışı editoryal: her kategori (Global Hububat, Global Meyve/Sebze,
 Türkiye Hububat, Türkiye Meyve/Sebze) 2 paragraf düz yazı olarak sunulur —
@@ -14,170 +14,112 @@ from playwright.sync_api import sync_playwright
 from grafik_uret import tmo_grafigi_svg, turib_grafigi_svg
 
 CSS = """
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
-
 :root {
   --ink: #1a1512;
-  --paper: #f6f5f1;
-  --paper-2: #ffffff;
-  --silo: #171410;
-  --silo-2: #23201a;
+  --paper: #ffffff;
+  --paper-2: #faf9f6;
   --wheat: #c9a339;
-  --wheat-light: #e4c869;
-  --moss: #33654a;
   --rust: #9b3a2c;
   /* Fiyat değişimi: renk-körü dostu Okabe-Ito (artış mavi, düşüş turuncu) */
   --up: #0072B2;
   --up-pill: #e0edf6;
   --down: #b34d00;
   --down-pill: #fbe7da;
-  --line: rgba(26,21,18,0.16);
+  --line: rgba(26,21,18,0.18);
 }
 * { box-sizing: border-box; }
+/* Tüm metin Times New Roman 12 pt; yalnızca başlık hiyerarşisi büyük */
 body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: Verdana, Geneva, sans-serif;
-  font-size: 10.5pt;
-  line-height: 1.55;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 12pt;
+  line-height: 1.45;
 }
 .page { padding: 0 0 36px 0; }
-h1, h2, h3, .display {
-  font-family: 'Oswald', Verdana, sans-serif;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
-  margin: 0;
-}
+h1 { font-family: inherit; font-weight: 700; margin: 0; }
 .header {
-  background: var(--silo);
-  color: var(--paper);
-  padding: 28px 40px 24px 40px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 28px 40px 18px 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 4px solid var(--wheat);
+  border-bottom: 2px solid var(--wheat);
 }
 .header .brand { display: flex; align-items: center; gap: 14px; }
-.header .brand img { height: 46px; width: 46px; object-fit: contain; background: var(--paper); padding: 4px; }
-.header .brand .name { font-size: 9pt; letter-spacing: 0.12em; color: var(--wheat-light); font-weight: 700; text-transform: uppercase; }
-.header h1 { font-size: 22pt; color: var(--paper); margin-top: 2px; }
-.header .date-badge {
-  border: 1px solid var(--wheat);
-  color: var(--wheat-light);
-  font-size: 10pt;
-  font-weight: 700;
-  padding: 8px 16px;
-  letter-spacing: 0.05em;
-}
-.content { padding: 30px 40px 0 40px; }
+.header .brand img { height: 52px; width: 52px; object-fit: contain; }
+.header .brand .name { font-size: 12pt; letter-spacing: 0.06em; color: var(--wheat); font-weight: 700; text-transform: uppercase; }
+.header h1 { font-size: 22pt; margin-top: 2px; }
+.header .date-badge { font-size: 12pt; font-weight: 700; }
+.content { padding: 26px 40px 0 40px; }
 
 .stat-row {
   display: flex;
   gap: 1px;
   background: var(--line);
   border: 1px solid var(--line);
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
-.stat-card {
-  flex: 1;
-  min-width: 0;
-  background: var(--paper-2);
-  padding: 14px 16px;
-}
-.stat-card .stat-label {
-  font-size: 7.5pt;
+.stat-card { flex: 1; min-width: 0; background: var(--paper); padding: 12px 14px; }
+.stat-card .stat-label { font-size: 12pt; font-weight: 700; margin-bottom: 6px; line-height: 1.25; }
+.stat-card .stat-kaynak { font-size: 12pt; color: rgba(26,21,18,0.6); margin-bottom: 6px; }
+.eyebrow {
+  font-size: 12pt;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(26,21,18,0.55);
-  margin-bottom: 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.stat-card .stat-value {
-  font-family: 'Oswald', Verdana, sans-serif;
-  font-size: 15pt;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.eyebrow {
-  font-size: 8.5pt;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
   color: var(--wheat);
-  margin: 0 0 4px 0;
+  margin: 0 0 2px 0;
 }
-/* Bölümler sayfaya bölünebilir (yoksa uzun metin bölümü sonraki sayfaya atlayıp
-   1. sayfayı boş bırakıyor); başlıklar ise içerikten ayrılmasın */
-.section { margin-bottom: 30px; }
+.section { margin-bottom: 28px; }
 .eyebrow, .section-title, .subsection-title { break-after: avoid; page-break-after: avoid; }
 .section-title {
-  font-size: 16pt;
-  border-bottom: 2px solid var(--ink);
-  padding-bottom: 8px;
+  font-size: 18pt;
+  font-weight: 700;
+  border-bottom: 1.5px solid var(--ink);
+  padding-bottom: 6px;
   margin-bottom: 14px;
 }
-.subsection { margin-bottom: 18px; }
+.subsection { margin-bottom: 16px; }
 .subsection-title {
-  font-size: 11.5pt;
-  color: var(--ink);
+  font-size: 14pt;
+  font-weight: 700;
   border-left: 4px solid var(--wheat);
   padding-left: 10px;
   margin-bottom: 8px;
 }
-.subsection .paragraflar {
-  column-count: 2;
-  column-gap: 28px;
-  column-rule: 1px solid var(--line);
-}
+.subsection .paragraflar { column-count: 2; column-gap: 28px; column-rule: 1px solid var(--line); }
 .subsection p { margin: 0 0 10px 0; text-align: justify; break-inside: avoid; }
-.divider { border: none; border-top: 1px solid var(--line); margin: 24px 0; }
+.divider { border: none; border-top: 1px solid var(--line); margin: 22px 0; }
 
-table.pricetable { width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 9pt; }
+table.pricetable { width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 12pt; }
 table.pricetable th {
-  background: var(--silo);
-  color: var(--paper);
+  background: var(--paper);
+  color: var(--ink);
   text-align: left;
-  font-family: 'Oswald', Verdana, sans-serif;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-size: 8pt;
-  padding: 7px 10px;
+  font-weight: 700;
+  padding: 6px 8px;
+  border-top: 1.5px solid var(--ink);
+  border-bottom: 1.5px solid var(--ink);
 }
-table.pricetable td {
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--line);
-  font-variant-numeric: tabular-nums;
-}
+table.pricetable td { padding: 5px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
 table.pricetable tr:nth-child(even) td { background: var(--paper-2); }
-.pill { display: inline-block; padding: 1px 8px; font-weight: 700; font-size: 8.5pt; }
+table.pricetable thead { display: table-header-group; }
+table.pricetable tr { break-inside: avoid; }
+.pill { display: inline-block; padding: 1px 8px; font-weight: 700; font-size: 12pt; }
 .pill.up { background: var(--up-pill); color: var(--up); }
 .pill.down { background: var(--down-pill); color: var(--down); }
-.pill.flat { background: var(--paper-2); color: var(--ink); opacity: 0.6; }
+.pill.flat { color: var(--ink); opacity: 0.6; }
 
-.kaynakca { font-size: 8pt; color: rgba(26,21,18,0.7); }
-.kaynakca .k-item { margin-bottom: 3px; }
-.kaynakca a { color: var(--ink); text-decoration: none; }
-.footer {
-  margin-top: 30px;
-  border-top: 1px solid var(--line);
-  padding: 14px 40px;
-  font-size: 8pt;
-  color: rgba(26,21,18,0.65);
-  display: flex;
-  justify-content: space-between;
-}
-.figure { margin: 4px 0 18px 0; padding: 14px 16px 10px 16px; background: var(--paper-2); border: 1px solid var(--line); page-break-inside: avoid; }
+.kaynakca { font-size: 12pt; }
+.kaynakca ul { margin: 0; padding-left: 18px; }
+.figure { margin: 4px 0 18px 0; padding: 12px 14px 10px 14px; background: var(--paper-2); border: 1px solid var(--line); break-inside: avoid; }
 .figure svg { width: 100%; height: auto; display: block; }
-.figure.dar svg { width: 64%; }
-.figcaption { font-size: 7.5pt; color: rgba(26,21,18,0.7); margin-top: 8px; line-height: 1.45; }
-.figcaption b { color: var(--ink); }
-.uyari { font-size: 8.5pt; color: var(--rust); font-style: italic; margin-top: 10px; }
+.figure.dar svg { width: 72%; }
+.figcaption { font-size: 12pt; margin-top: 8px; line-height: 1.4; }
+.uyari { font-size: 12pt; color: var(--rust); font-style: italic; margin-top: 10px; }
 """
 
 
@@ -189,6 +131,13 @@ def _pill(deg):
     return f'<span class="pill {yon}">{isaret}{deg:.2f}%</span>'
 
 
+KAYNAK_ADLARI = {"TURIB_NORMAL_SEANS": "TÜRİB", "TURIB_ENDEKS": "TÜRİB Endeks", "TMO": "TMO"}
+
+
+def _kaynak_adi(kod):
+    return KAYNAK_ADLARI.get(kod, kod)
+
+
 def _fiyat_tablosu_html(satirlar):
     if not satirlar:
         return "<p>Veri alınamadı.</p>"
@@ -196,7 +145,7 @@ def _fiyat_tablosu_html(satirlar):
     for r in satirlar:
         onceki = r["ort_fiyat_onceki"] if r["ort_fiyat_onceki"] is not None else "-"
         satir_html.append(
-            f"<tr><td>{html.escape(r['kaynak'])}</td><td>{html.escape(r['urun'])}</td>"
+            f"<tr><td>{html.escape(_kaynak_adi(r['kaynak']))}</td><td>{html.escape(r['urun'])}</td>"
             f"<td>{onceki}</td><td>{r['ort_fiyat_son']} {html.escape(r['birim'] or '')}</td>"
             f"<td>{_pill(r['degisim_yuzde'])}</td></tr>"
         )
@@ -223,7 +172,8 @@ def _stat_kartlari_html(turib_ozet, tmo_ozet, adet=4):
     for r in secilenler:
         kartlar.append(
             '<div class="stat-card">'
-            f'<div class="stat-label">{html.escape(r["urun"])} · {html.escape(r["kaynak"])}</div>'
+            f'<div class="stat-label">{html.escape(r["urun"])}</div>'
+            f'<div class="stat-kaynak">{html.escape(_kaynak_adi(r["kaynak"]))}</div>'
             f'<div class="stat-value">{_pill(r["degisim_yuzde"])}</div>'
             "</div>"
         )
@@ -237,6 +187,27 @@ def _sekil_html(svg, no, aciklama, dar=False):
             f'<div class="figcaption"><b>Şekil {no}.</b> {aciklama}</div></div>')
 
 
+def _kaynak_siteleri(haberler):
+    """Kaynakçada link/başlık yok, sadece site adları. Reddit adı geçmez,
+    gazeteciler isimle anılmaz (kullanıcı tercihi)."""
+    siteler = []
+    for h in haberler:
+        k = h["kaynak"]
+        if k.startswith("Dünya Gazetesi"):
+            ad = "Dünya Gazetesi"
+        elif k.startswith("Food Business News"):
+            ad = "Food Business News"
+        elif k.startswith("Reddit"):
+            ad = "Yurt dışı sosyal medya ve sektör forumları"
+        elif k.startswith("LinkedIn/Bloomberg"):
+            ad = "Bloomberg HT ve tarım gazetecilerinin paylaşımları"
+        else:
+            ad = k
+        if ad not in siteler:
+            siteler.append(ad)
+    return siteler + ["TÜRİB ve TMO (fiyat verileri)"]
+
+
 def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet, haberler):
     """paragraflar: {
         'global_hububat': [p1, p2], 'global_meyve_sebze': [p1, p2],
@@ -247,12 +218,7 @@ def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet,
     if anomaliler:
         uyari_html = f'<div class="uyari">[Not] {len(anomaliler)} üründe veri anomalisi tespit edildi, tablolara dahil edilmedi.</div>'
 
-    kaynakca_items = "".join(
-        f'<div class="k-item">[{html.escape(h["kaynak"])}] {html.escape(h["baslik"])}'
-        + (f' — <a href="{html.escape(h["link"])}">{html.escape(h["link"])}</a>' if h.get("link") else "")
-        + "</div>"
-        for h in haberler
-    )
+    kaynakca_items = "".join(f"<li>{html.escape(k)}</li>" for k in _kaynak_siteleri(haberler))
 
     logo_src = Path(logo_yolu).resolve().as_uri() if logo_yolu and Path(logo_yolu).exists() else ""
 
@@ -262,7 +228,7 @@ def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet,
   <div class="header">
     <div class="brand">
       {f'<img src="{logo_src}">' if logo_src else ''}
-      <div><div class="name">Sarıaslan Ticaret</div><h1>Günlük Gıda &amp; Tarım Bülteni</h1></div>
+      <div><div class="name">Sarıaslan Ticaret</div><h1>Günlük Özet</h1></div>
     </div>
     <div class="date-badge">{html.escape(tarih_str)}</div>
   </div>
@@ -318,14 +284,10 @@ def bulten_html_olustur(tarih_str, logo_yolu, paragraflar, turib_ozet, tmo_ozet,
     <div class="section">
       <div class="eyebrow">Bölüm 5</div>
       <div class="section-title">Kaynakça</div>
-      <div class="kaynakca">{kaynakca_items}</div>
+      <div class="kaynakca"><ul>{kaynakca_items}</ul></div>
     </div>
   </div>
 
-  <div class="footer">
-    <span>Fiyat verisi: github.com/utkusaraslan-hue/generalgrainrepo</span>
-    <span>Hazırlayan: Utku Sarıaslan — Sarıaslan Ticaret</span>
-  </div>
 </div>
 </body></html>"""
 
