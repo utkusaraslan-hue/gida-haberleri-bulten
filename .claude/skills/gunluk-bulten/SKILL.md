@@ -231,6 +231,48 @@ forumları" olarak geçer). Alt bilgi (GitHub linki, "Hazırlayan") YOK.
 gör). Kullanıcıya PDF yolunu ve kısa özet (kaç haber, TÜRİB/TMO satır sayısı,
 hangi kaynaklarda sorun oldu, kaç ürün anomali olarak filtrelendi) bildir.
 
+### 5. Canlıya yayınla (AYRI bir repo — ATLAMA)
+
+PDF'i üretmek ve `gida-haberleri` reposuna push etmek YETMEZ. Sarıaslan
+Ticaret'in canlı sitesi (`sariaslanticaret.com`) PDF'i AYRI bir git
+reposundan (`website/web`, GitHub: `utkusaraslan-hue/sariaslan-ticaret`)
+serviyor. Bu adım atlanırsa kullanıcı canlıda eski bülteni görmeye devam
+eder — 26-09-2026'da tam olarak bu yaşandı (bkz. memory:
+`gida_bulten_canli_yayin_akisi`).
+
+```bash
+cd ../website/web
+python3 scripts/refresh_gida_bultenleri.py
+git add public/bultenler/*.pdf src/data/bultenler.ts
+git commit -m "Günlük bülteni güncelle"
+git push
+```
+
+`refresh_gida_bultenleri.py`, `gida-haberleri/`'deki EN GÜNCEL tarihli PDF'i
+bulup `website/web/public/bultenler/<tarih>.pdf`'e kopyalar ve
+`src/data/bultenler.ts`'i günceller (eski PDF'leri otomatik siler). Vercel bu
+push'u GitHub entegrasyonuyla görüp otomatik deploy eder — birkaç dakika
+sürer. Kullanıcı "canlıda eski görünüyor" derse ilk kontrol: iki dosyanın
+checksum'ı eşleşiyor mu (`shasum gida-haberleri/<tarih>/gunluk_gida_ozet_<tarih>.pdf
+website/web/public/bultenler/<tarih>.pdf`).
+
+## Ham veriyi koru — rm -rf ile SİLME
+
+`ham-veri/<tarih>/` klasörü `.gitignore`'da hariç tutuluyor (bilinçli — her
+gün onlarca MB görsel/xlsx repoyu şişirmesin diye), yani **git'te YEDEĞİ
+YOK**. 26-09-2026'da bu klasör `rm -rf` ile silindi (içine yeni veri
+eklenip eklenmediğine bakılmadan) ve Time Machine/Çöp Kutusu'nda da
+bulunamadı — 57 haberlik toplama işlemi baştan tekrarlanmak zorunda kaldı
+(14 Browser Use görevi, ~20 dk).
+
+- Bu klasörü SİLMEDEN ÖNCE mutlaka `ls`/`tarih.json` ile içeriğini kontrol
+  et, boş olduğundan emin olmadan `rm -rf` çalıştırma.
+- Veri toplama tamamlandıktan sonra, klasörü git'in ve `gida-haberleri`'nin
+  DIŞINDA ayrı bir konuma da kopyala (kullanıcı isteği, kalıcı pratik):
+  ```bash
+  rm -rf ../ham-veri-yedek/<tarih> && cp -R ham-veri/<tarih> ../ham-veri-yedek/<tarih>
+  ```
+
 ## Tasarım
 
 **Herhangi bir tasarım değişikliği yapmadan/önermeden önce `tasarim.md`
